@@ -1,0 +1,10 @@
+
+# This is an example <cluster>.conf file used by several slurm scripts. The
+# file should be named <cluster>.conf (i.e. the cluster's name) and should
+# reside in the same directory as slurm.conf or one directory above it.
+
+[general]
+
+# maintainers - comma separated list of mail addresses (or users) to recieve
+# drain/resume notifications. The default is root.
+maintainers: root
