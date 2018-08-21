@@ -8,6 +8,7 @@ School of Computer Science and Engineering.
 * [pam_slurm_save_cgroups](#pam_slurm_save_cgroupssh)
 * [healthcheck.sh](#healthchecksh)
 * [cluster.conf](#clusterconf)
+* [functions.bash](#functionsbash)
 
 ## pam\_slurm\_save\_cgroups\.sh
 
@@ -57,3 +58,33 @@ same directory as `slurm.conf` or one directory above it.
 |Option|Value|
 |-|-|
 |maintainers| comma separated list of mails (or users) to send mails regarding draining and resuming nodes.|
+
+## functions.bash
+
+A bash file that can be source'ed by bash scripts with various functions. To
+use, it's best to create the `cshuji` directory where slurm.conf resides and
+run:
+```
+slurmdir=`dirname \`scontrol show config | awk '$1=="SLURM_CONF" {print $3}'\``
+. $slurmdir/cshuji/functions.bash
+```
+### slurm\_get\_config
+
+Retrieves SLURM's configuration by calling `scontrol show config` and storing
+the data in `_slurm_config` array.
+
+Should be called when `slurm.conf` changes, or when a different cluster is
+wanted.
+
+### slurm\_config <conf>
+
+Returns a specific configuration, e.g.:
+```
+slurm_config MaxArraySize
+```
+
+Will call `slurm_get_config` if needed.
+
+### slurm\_maintainers
+
+Returns the maintainers list from `cluster.conf`
