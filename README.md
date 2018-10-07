@@ -9,6 +9,7 @@ School of Computer Science and Engineering.
 * [healthcheck.sh](#healthchecksh)
 * [cluster.conf](#clusterconf)
 * [functions.bash](#functionsbash)
+* [cshuji/Slurm.pm](#cshujislurmpm)
 
 ## pam\_slurm\_save\_cgroups\.sh
 
@@ -88,3 +89,17 @@ Will call `slurm_get_config` if needed.
 ### slurm\_maintainers
 
 Returns the maintainers list from `cluster.conf`
+
+## cshuji/Slurm.pm
+
+A perl module with slurm utility functions (mostly parsing slurm commands
+output).
+
+To install, the cshuji directory needs to be in the standard perl package
+paths, or the `PERL5LIB` environment variable needs to be set appropriately.
+
+### cshuji/Slurm/Local.pm
+
+This file, if exists, is loaded and exported automatically. It is used mainly
+for backward compatibility, but in the future may be used to override functions
+in cshuji/Slurm.pm
