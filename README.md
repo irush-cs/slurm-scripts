@@ -7,6 +7,7 @@ School of Computer Science and Engineering.
 
 * [pam_slurm_save_cgroups](#pam_slurm_save_cgroupssh)
 * [healthcheck.sh](#healthchecksh)
+* [healthcheck.d/netspeed.sh](#healthcheckdnetspeedsh)
 * [cluster.conf](#clusterconf)
 * [functions.bash](#functionsbash)
 * [cshuji/Slurm.pm](#cshujislurmpm)
@@ -47,6 +48,11 @@ as set in [cluster.conf](#clusterconf)
 
 If the programs take more than 50 seconds to run, or if the `healthcheck.d`
 directory is missing, the node will be drained with the appropriate message.
+
+## healthcheck.d/netspeed.sh
+
+A healthcheck script to verify that the default route interface speed is not
+less then 1000Mb/s.
 
 ## cluster\.conf
 
