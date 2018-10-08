@@ -53,18 +53,39 @@ if [[ $? != 0 || -n "$out" ]]; then
     if [[ -z $out ]]; then
         out="health check program failed"
     fi
+    newdrain=0
     case "$state" in
         *DRAIN*)
             # if drained, check if because of healthcheck, otherwise keep drained
-            if [[ `scontrol show node $node | awk -F= '$1~/^\s*Reason/&&$2~/^HC: /{print "yes"}'` = "yes" ]]; then
+            reason=`scontrol show node $node | awk -F= '$1~/^\s*Reason/{print $2}'`
+            if echo $reason | grep -q ^HC:\ ; then
                 scontrol update nodename=$node state=drain reason="HC: $out"
+                case "$reason" in
+                    "HC: $out ["*)
+                        newdrain=0
+                        ;;
+                    *)
+                        newdrain=1
+                        ;;
+                esac
             fi
             ;;
         *)
             # if not drained, drain it
             scontrol update nodename=$node state=drain reason="HC: $out"
+            newdrain=1
             ;;
     esac
+
+    if [[ "$newdrain" == 1 ]]; then
+        (echo "Healthcheck issues ($out), draining $node";
+         echo;
+         echo "Running processes:";
+         ssqueue -w $node;
+         echo;
+         echo "To recheck run:";
+         echo "root@$node# $0") | mail -s "Draining node $node (HC: $out)" ${maintainers} > /dev/null 2>&1
+    fi
 
     # on startup, will run this until passes
     exit 1;

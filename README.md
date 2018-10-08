@@ -40,11 +40,12 @@ should reside in the same directory as `slurm.conf`.
 
 If any of the programs in `healthcheck.d` produce a single line and exit with
 status != 0, the node will be drained with Reason containing the line with
-additional "HC: " prefix.
+additional "HC: " prefix. Mail will be sent to the maintainers as set in
+[cluster.conf](#clusterconf).
 
 If all program passes and the node is drained with reason prefixed with "HC: ",
-the node will be resumed automatically and mail will be sent to the maintainers
-as set in [cluster.conf](#clusterconf)
+the node will be resumed automatically and mail will be sent to the
+maintainers.
 
 If the programs take more than 50 seconds to run, or if the `healthcheck.d`
 directory is missing, the node will be drained with the appropriate message.
