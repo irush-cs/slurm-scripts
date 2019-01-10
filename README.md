@@ -105,6 +105,13 @@ output).
 To install, the cshuji directory needs to be in the standard perl package
 paths, or the `PERL5LIB` environment variable needs to be set appropriately.
 
+### parse\_scontrol\_show
+
+Parses some of the `scontrol show` commands into a perl hash.
+```
+$results = parse_scontrol_show([`scontrol show job -dd`])
+```
+
 ### cshuji/Slurm/Local.pm
 
 This file, if exists, is loaded and exported automatically. It is used mainly
