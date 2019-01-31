@@ -11,6 +11,7 @@ School of Computer Science and Engineering.
 * [cluster.conf](#clusterconf)
 * [functions.bash](#functionsbash)
 * [cshuji/Slurm.pm](#cshujislurmpm)
+* [Makefile](#makefile)
 
 ## pam\_slurm\_save\_cgroups\.sh
 
@@ -117,3 +118,10 @@ $results = parse_scontrol_show([`scontrol show job -dd`])
 This file, if exists, is loaded and exported automatically. It is used mainly
 for backward compatibility, but in the future may be used to override functions
 in cshuji/Slurm.pm
+
+## Makefile
+
+This is currently only used to run the perl module tests:
+```
+make test
+```
