@@ -16,6 +16,8 @@ our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(parse_scontrol_show);
 our @EXPORT = qw();
 
+our $VERSION = "0.1";
+
 BEGIN {
     # for backward compatibility
     if (eval "use cshuji::Slurm::Local; 1") {
