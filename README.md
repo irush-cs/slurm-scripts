@@ -113,6 +113,15 @@ Parses some of the `scontrol show` commands into a perl hash.
 $results = parse_scontrol_show([`scontrol show job -dd`])
 ```
 
+### split\_gres
+
+Splits a GRES or TRES string to a perl hash. Can combine the has with previous
+hash values
+```
+my $prev = {gpu => 1}
+split_gres("gpu:2,mem:1M", $prev) # {gpu => 3, mem => "1M"}
+```
+
 ### cshuji/Slurm/Local.pm
 
 This file, if exists, is loaded and exported automatically. It is used mainly

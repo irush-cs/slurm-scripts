@@ -13,7 +13,7 @@ package cshuji::Slurm;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(parse_scontrol_show);
+our @EXPORT_OK = qw(parse_scontrol_show split_gres);
 our @EXPORT = qw();
 
 our $VERSION = "0.1";
@@ -137,6 +137,81 @@ sub parse_scontrol_show {
 
     return \%results;
 }
+
+
+=head2 split_gres
+
+ $results = split_gres($gres, [$prev])
+
+Splits a gres string ($gres) to a hash ($results) for gres keys to values.
+
+no_consume and types are currently ignored.
+
+If $prev is specified, the results will contained both gres's
+combined. Numerical values will be summed; Memory suffixes will be handled
+properly and converted to megabytes; unknown strings will be concatenated with
+",".
+
+Tres is also supported, i.e. $gres can have either "key:value" or "key=value".
+
+Examples:
+
+  split_gres("gpu:2,mem:3M")                 -> {gpu => 2, mem => "3M"}
+  split_gres("gpu,gpu:2")                    -> {gpu => 3}
+  split_gres("gpu:2,mem:2M", "gpu:3,mem:2G") -> {gpu => 5, mem => "2050M"}
+  split_gres("gres/gpu=3")                   -> {"gres/gpu" => 3}
+
+=cut
+
+sub split_gres {
+    my $input = shift;
+    my $gres = shift || {};
+    my $sep = ":";
+
+    my $gsep = index($input, ":");
+    my $tsep = index($input, "=");
+    if ($tsep > 0 and ($tsep < $gsep or $gsep < 0)) {
+        $sep = "=";
+    }
+
+    $gres = {%$gres};
+
+    foreach my $g (split /,/, $input) {
+        $g = "$g${sep}1" if index($g, $sep) < 0 or $g !~ m/${sep}\d/;
+        my ($t, $v, $r) = split /\Q${sep}\E/, $g;
+        $v = $r if ($v !~ m/^\d/ and $r and $r =~ m/^\d/);
+        if ($v =~ m/^\d+$/) {
+            $gres->{$t} ||= 0;
+        }
+        if (defined $gres->{$t} and $gres->{$t} =~ m/^\d+$/ and $v =~ m/^\d+$/) {
+            $gres->{$t} += $v;
+        } else {
+            $gres->{$t} = join(",", $v, $gres->{$t} ? $gres->{$t} : ());
+
+            # memory sum
+            if ($gres->{$t} =~ m/^((\d+[MGTP]),)*(\d+[MGTP])$/) {
+                my $sum = 0;
+                foreach my $sub (split /,/, $gres->{$t}) {
+                    my ($sub1, $sub2) = $sub =~ m/^(\d+)([MGTP])$/;
+                    if ($sub2 eq "M") {
+                        $sub = $sub1;
+                    } elsif ($sub2 eq "G") {
+                        $sub = $sub1 * 1024;
+                    } elsif ($sub2 eq "T") {
+                        $sub = $sub1 * 1024 * 1024;
+                    } elsif ($sub2 eq "P") {
+                        $sub = $sub1 * 1024 * 1024 * 1024;
+                    }
+                    $sum += $sub;
+                }
+                $gres->{$t} = "${sum}M";
+            }
+        }
+    }
+
+    return $gres;
+}
+
 
 1;
 __END__
