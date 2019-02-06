@@ -11,9 +11,15 @@ package cshuji::Slurm;
 #
 ################################################################################
 
+use List::Util;
+
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(parse_scontrol_show split_gres);
+our @EXPORT_OK = qw(parse_scontrol_show
+                    split_gres
+                    nodecmp
+                    nodes2array
+                  );
 our @EXPORT = qw();
 
 our $VERSION = "0.1";
@@ -212,6 +218,117 @@ sub split_gres {
     return $gres;
 }
 
+=head2 nodecmp
+
+ $results = sort nodecmp @nodelist
+
+Sorts node list while taking into account numeric indices inside.
+
+Examples:
+
+  sort nodecmp ('node-10', 'node-9', 'node-90') -> ('node-9', 'node-10', 'node-90')
+
+=cut
+
+sub nodecmp($$) {
+    _nodecmp($_[0], $_[1]);
+}
+
+sub _nodecmp {
+    my $a = shift;
+    my $b = shift;
+
+    my ($a1, $a2, $a3) = ($a =~ m/^([^\d]*)(\d*)(.*)$/);
+    my ($b1, $b2, $b3) = ($b =~ m/^([^\d]*)(\d*)(.*)$/);
+
+    if ($a1 ne $b1) {
+        return $a1 cmp $b1;
+    }
+
+    if ($a2 ne $b2) {
+        return $a2 <=> $b2;
+    }
+
+    if ($a3 =~ m/\d/ or $b3 =~ m/\d/) {
+        return _nodecmp($a3, $b3);
+    } else {
+        return $a3 cmp $b3;
+    }
+}
+
+=head2 nodes2array
+
+ $results = nodes2array @nodesstrings
+
+Opens up the input strings and returns a complete list of the nodes. The output
+is sorted using nodecmp.
+
+Examples:
+
+  nodes2array('node-[01-10]') -> ('node-01', 'node-02', ... , 'node-10')
+
+=cut
+
+sub nodes2array {
+    my %nodes;
+    my @input = @_;
+    while (my $arg = shift @input) {
+
+        # simple, no comma, no bracket
+        if ($arg !~ m/[,\[\]]/) {
+            $nodes{$arg} = $arg;
+            next;
+        }
+
+        # comma before bracket
+        if ($arg =~ m/^([^[]*),(.*)$/) {
+            my $node = $1;
+            $arg = $2;
+            $nodes{$node} = $node;
+            unshift @input, $arg;
+            next;
+        }
+
+        # brackets
+        my @ranges;
+        while ($arg =~ m/(.*)\[([\d,-]+)\](.*)/) {
+            my ($pref, $range, $suf) = ($1, $2, $3);
+            push @ranges, {pref => $pref, range => $range};
+            $arg = $suf;
+        }
+        if ($arg =~ m/(.*),(.*)/) {
+            $arg = $1;
+            unshift @input, $2;
+        }
+        # will unshift ${pref}@ranges[0]$ranges[1..-1]$arg
+        if (@ranges) {
+            my $range = shift @ranges;
+            my $pref = $range->{pref};
+            $range = $range->{range};
+            my @range;
+            foreach my $subrange (split /,/, $range) {
+                if ($subrange =~ m/^(\d+)-(\d+)$/) {
+                    my $first = $1;
+                    my $last = $2;
+                    my $len = 1;
+                    $len = length($first);
+                    for (my $i = $first; $i <= $last; $i++) {
+                        push @range, sprintf("%0${len}i", $i)
+                    }
+                } else {
+                    push @range, $subrange;
+                }
+            }
+            my $suffix = List::Util::reduce {$a.$b}, map {$_->{pref}."[".$_->{range}."]"} @ranges;
+            $suffix .= $arg;
+            unshift @input, map {"${pref}${_}$suffix"} @range;
+            next;
+        }
+
+        $nodes{$arg} = $arg;
+    }
+    return sort nodecmp grep {$_} keys %nodes;
+}
 
 1;
 __END__

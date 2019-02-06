@@ -122,6 +122,22 @@ my $prev = {gpu => 1}
 split_gres("gpu:2,mem:1M", $prev) # {gpu => 3, mem => "1M"}
 ```
 
+### nodecmp
+
+A compare function for `sort` to sort nodes. This takes into account numeric
+indices inside the node names.
+```
+print join("\n", sort nodecmp ('node-10', 'node-9', 'node-90'))
+node-9
+node-10
+node-90
+```
+
+### nodes2array
+
+Opens up the input string(s) (slurm node notation) and returns a complete list
+of the nodes. The output is sorted using nodecmp.
+
 ### cshuji/Slurm/Local.pm
 
 This file, if exists, is loaded and exported automatically. It is used mainly

@@ -18,7 +18,7 @@ $scriptdir = "." unless $scriptdir;
 
 my $Test = Test::Builder->new;
 my $ps = Package::Stash->new("cshuji::Slurm");
-my @funcs = $ps->list_all_symbols('CODE');
+my @funcs = grep {index($_, "_") != 0} $ps->list_all_symbols('CODE');
 $Test->plan(tests => scalar @funcs);
 foreach my $func (@funcs) {
     my $ok = -e "$scriptdir/${func}.t";
