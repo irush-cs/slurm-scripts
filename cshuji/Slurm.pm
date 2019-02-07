@@ -19,6 +19,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     split_gres
                     nodecmp
                     nodes2array
+                    get_jobs
                   );
 our @EXPORT = qw();
 
@@ -328,6 +329,114 @@ sub nodes2array {
         $nodes{$arg} = $arg;
     }
     return sort nodecmp grep {$_} keys %nodes;
+}
+
+=head2 get_jobs
+
+ $results = get_jobs()
+
+Get jobs hash ref by calling "scontrol show jobs -dd". Uses the
+I<parse_scontrol_show> function so _DETAILS are available with the following items:
+
+=over
+
+=over
+
+=item CPU_IDs
+
+=item GRES_IDX
+
+=item Mem
+
+=item Nodes
+
+=back
+
+=back
+
+In addition, the following calculated values are also available per detail:
+
+=over
+
+=over
+
+=item _JobId      - The job's JobId
+
+=item _EndTime    - The job's EndTime
+
+=item _nCPUs      - Totol number of CPUs from CPU_IDs
+
+=item _GRES       - Hash of GRES from GRES_IDX
+
+=item _NodeList   - Array of nodes from Nodes
+
+=back
+
+=back
+
+Also, the job hash contains the following additional values
+
+=over
+
+=over
+
+=item _TRES       - Hash of TRES
+
+=back
+
+=back
+
+=cut
+
+sub get_jobs {
+
+    my %args = @_;
+    my $jobs;
+    if ($args{_scontrol_output}) {
+        $jobs = parse_scontrol_show($args{_scontrol_output});
+    } else {
+        $jobs = parse_scontrol_show([`scontrol show jobs -dd`]);
+    }
+
+    foreach my $job (values %$jobs) {
+        foreach my $detail (@{$job->{_DETAILS}}) {
+            $detail->{_JobId} = $job->{JobId};
+            $detail->{_EndTime} = $job->{EndTime};
+
+            # cpus per detail
+            $detail->{_nCPUs} = 0;
+            foreach my $cr (split /,/, $detail->{CPU_IDs}) {
+                if ($cr =~ m/(.*)-(.*)/) {
+                    $detail->{_nCPUs} += $2 - $1 + 1;
+                } else {
+                    $detail->{_nCPUs}++;
+                }
+            }
+
+            # gres per detail
+            $detail->{_GRES} = {};
+            if ($detail->{GRES_IDX}) {
+                foreach my $gres ($detail->{GRES_IDX} =~ m/([^(]+?\(IDX:[-\d,]+\),?)/g) {
+                    $gres =~ s/,$//;
+                    my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(IDX:([\d\-,]+)\)/;
+                    $detail->{_GRES}{$name} //= 0;
+                    foreach my $gr (split /,/, $count) {
+                        if ($gr =~ m/(.*)-(.*)/) {
+                            $detail->{_GRES}{$name} += $2 - $1 + 1;
+                        } else {
+                            $detail->{_GRES}{$name}++;
+                        }
+                    }
+                }
+            }
+
+            $detail->{_NodeList} = [nodes2array($detail->{Nodes})];
+        }
+
+        $job->{_TRES} = split_gres($job->{TRES}, {});
+    }
+
+    return $jobs;
 }
 
 1;

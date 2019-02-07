@@ -138,6 +138,27 @@ node-90
 Opens up the input string(s) (slurm node notation) and returns a complete list
 of the nodes. The output is sorted using nodecmp.
 
+### get_jobs
+
+Get jobs hash ref by calling `scontrol show jobs -dd`. Uses the
+`parse_scontrol_show` function so \_DETAILS are available with the following
+items:
+* CPU_IDs
+* GRES_IDX
+* Mem
+* Nodes
+
+In addition, the following calculated values are also available per detail:
+
+* _JobId      - The job's JobId
+* _EndTime    - The job's EndTime
+* _nCPUs      - Totol number of CPUs from CPU_IDs
+* _GRES       - Hash of GRES from GRES_IDX
+* _NodeList   - Array of nodes from Nodes
+
+Also, the job hash contains the following additional values:
+* _TRES       - Hash of TRES
+
 ### cshuji/Slurm/Local.pm
 
 This file, if exists, is loaded and exported automatically. It is used mainly
