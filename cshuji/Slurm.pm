@@ -366,7 +366,11 @@ In addition, the following calculated values are also available per detail:
 
 =item _nCPUs      - Totol number of CPUs from CPU_IDs
 
+=item _CPUs       - Array of CPU IDs
+
 =item _GRES       - Hash of GRES from GRES_IDX
+
+=item _GRESs      - Hash of GRES with the gres IDX (like _CPUs)
 
 =item _NodeList   - Array of nodes from Nodes
 
@@ -381,6 +385,8 @@ Also, the job hash contains the following additional values
 =over
 
 =item _TRES       - Hash of TRES
+
+=item _NodeList   - Array of nodes from NodeList
 
 =back
 
@@ -405,26 +411,33 @@ sub get_jobs {
 
             # cpus per detail
             $detail->{_nCPUs} = 0;
+            $detail->{_CPUs} = [];
             foreach my $cr (split /,/, $detail->{CPU_IDs}) {
                 if ($cr =~ m/(.*)-(.*)/) {
                     $detail->{_nCPUs} += $2 - $1 + 1;
+                    push @{$detail->{_CPUs}}, ($1 .. $2);
                 } else {
                     $detail->{_nCPUs}++;
+                    push @{$detail->{_CPUs}}, $cr;
                 }
             }
 
             # gres per detail
             $detail->{_GRES} = {};
+            $detail->{_GRESs} = {};
             if ($detail->{GRES_IDX}) {
                 foreach my $gres ($detail->{GRES_IDX} =~ m/([^(]+?\(IDX:[-\d,]+\),?)/g) {
                     $gres =~ s/,$//;
                     my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(IDX:([\d\-,]+)\)/;
                     $detail->{_GRES}{$name} //= 0;
+                    $detail->{_GRESs}{$name} //= [];
                     foreach my $gr (split /,/, $count) {
                         if ($gr =~ m/(.*)-(.*)/) {
                             $detail->{_GRES}{$name} += $2 - $1 + 1;
+                            push @{$detail->{_GRESs}{$name}}, ($1 .. $2);
                         } else {
                             $detail->{_GRES}{$name}++;
+                            push @{$detail->{_GRESs}{$name}}, $gr;
                         }
                     }
                 }
@@ -434,6 +447,11 @@ sub get_jobs {
         }
 
         $job->{_TRES} = split_gres($job->{TRES}, {});
+        if ($job->{NodeList} eq "(null)") {
+            $job->{_NodeList} = [];
+        } else {
+            $job->{_NodeList} = [nodes2array($job->{NodeList})];
+        }
     }
 
     return $jobs;
