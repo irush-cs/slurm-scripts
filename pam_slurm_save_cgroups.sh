@@ -4,8 +4,8 @@
 #
 #   pam_slurm_save_cgroups.sh
 #
-#   Copyright (C) 2018 Hebrew University of Jerusalem Israel, see
-#   LICENSE file.
+#   Copyright (C) 2018-2019 Hebrew University of Jerusalem Israel, see LICENSE
+#   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
 #
@@ -37,7 +37,7 @@ case "$1" in
         cat /proc/$_ppid/cgroup > $_savefile
     ;;
     restore)
-        for cgroup in `awk -F: '$3~/^\/slurm\// {printf "/sys/fs/cgroup/%s%s/tasks\n", $2, $3}' ${_savefile}`; do
+        for cgroup in `awk -F: '$2&&$3~/^\/slurm\// {printf "/sys/fs/cgroup/%s%s/tasks\n", $2, $3}' ${_savefile}`; do
             echo $_ppid >> $cgroup
         done
 
