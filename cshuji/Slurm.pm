@@ -11,6 +11,7 @@ package cshuji::Slurm;
 #
 ################################################################################
 
+use Clone;
 use List::Util;
 
 require Exporter;
@@ -20,6 +21,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     nodecmp
                     nodes2array
                     get_jobs
+                    parse_conf
                   );
 our @EXPORT = qw();
 
@@ -455,6 +457,96 @@ sub get_jobs {
     }
 
     return $jobs;
+}
+
+
+=head2 parse_conf
+
+ $results = parse_conf(<conf file>, [errors => $arrref])
+
+Parses a slurm type conf file. Returns a hash ref of the configuration. On
+error, if <errors> is availalbe will contain a list of errors. If file cannot
+be read, undef is returned.
+
+Lines that appears multiple times will be converted to hash refs. Each element
+will be a hash ref of the values within.
+
+=cut
+
+sub parse_conf {
+    my $file = shift;
+    my %params = @_;
+    my $errors = $params{errors} // [];
+    my $conf = {};
+
+    unless (open(CONF, "<$file")) {
+        push @$errors, "$!";
+        return undef;
+    }
+    foreach my $line (<CONF>) {
+        chomp($line);
+        my $origline = $line;
+        $line =~ s/#.*//;
+        $line =~ s/^\s*|\s*$//g;
+        next unless $line;
+
+        if ($line =~ m/^\s*([^=]+?)\s*=\s*(.*?)\s*$/) {
+            my ($key, $value) = ($1, $2);
+            if (exists $conf->{$key}) {
+                if (ref $conf->{$key} ne "ARRAY") {
+                    $conf->{$key} = [$conf->{$key}]
+                }
+                push @{$conf->{$key}}, $value;
+            } elsif ($value =~ m/\s/) {
+                $conf->{$key} = [$value];
+            } else {
+                $conf->{$key} = $value;
+            }
+        } else {
+            push @$errors, "Bad line in $file: \"$origline\"";
+        }
+    }
+    close(CONF);
+
+    # lower before ARRAY, so convert ARRAY to HASH properly
+    sub _add_lower {
+        my $conf = $_[0];
+
+        foreach my $key (keys %$conf) {
+            my $lkey = lc($key);
+            my $value = $conf->{$key};
+            if (exists $conf->{$lkey}) {
+                if (ref $value ne "ARRAY") {
+                    $value = [$value];
+                }
+                if (ref $conf->{$lkey} ne "ARRAY") {
+                    $conf->{$lkey} = [$conf->{$lkey}];
+                }
+                $value = [@$value, @{$conf->{$lkey}}];
+            }
+            $conf->{$lkey} = Clone::clone($value);
+            $conf->{$key} = $value;
+        }
+    }
+    _add_lower($conf);
+
+    # go over array values (nodes, partitions, etc.)
+    foreach my $key (keys %$conf) {
+        if (ref $conf->{$key} eq "ARRAY") {
+            my @values = @{$conf->{$key}};
+            $conf->{$key} = {};
+            foreach my $value (@values) {
+                my ($name, $value) = split /\s+/, $value, 2;
+                my %values = (map {(split /=/, $_, 2)} split /\s+/, $value);
+                $conf->{$key}{$name} = {%values};
+                _add_lower($conf->{$key}{$name});
+                $conf->{$key}{$name}{$key} = $name;
+                $conf->{$key}{$name}{lc($key)} = $name;
+            }
+        }
+    }
+
+    return $conf;
 }
 
 1;
