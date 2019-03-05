@@ -20,6 +20,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     split_gres
                     nodecmp
                     nodes2array
+                    get_config
                     get_jobs
                     parse_conf
                   );
@@ -547,6 +548,61 @@ sub parse_conf {
     }
 
     return $conf;
+}
+
+=head2 get_config
+
+ $results = get_config([errors => $arrref])
+
+Calls `scontrol show config` and parses the output into a hash ref.
+
+If I<errors> is given, will contain any errors. Otherwise errors will be printed
+to stderr.
+
+=cut
+
+sub get_config {
+    my %args = @_;
+    my $errors = $args{errors};
+    my $config = {};
+    my @lines;
+    if ($args{_scontrol_output}) {
+        @lines = @{$args{_scontrol_output}};
+    } else {
+        @lines = `scontrol show config`;
+        if (not @lines or $?) {
+            my $err = "Can't run scontrol show config";
+            if ($errors) {
+                push @$errors, $err;
+            } else {
+                print STDERR $err."\n";
+            }
+            return undef;
+        }
+    }
+
+    chomp(@lines);
+    foreach my $line (@lines) {
+        if ($line =~ m/^\s*([^\s]+?)\s*=\s*([^\s].*)?\s*?/) {
+            my ($key, $value) = ($1, $2);
+            $value //= "";
+            $config->{$key} = $value;
+        } elsif ($line =~ m/^Configuration data as of \d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d$/) {
+            # ignore
+        } elsif ($line =~ m/^\s*$/) {
+            # ignore
+        } elsif ($line =~ m@^Slurmctld\(primary/backup\) at .*? are (UP|DOWN)/(UP|DOWN)@) {
+            # ignore
+        } else {
+            if ($errors) {
+                push @$errors, "Bad line from show config: $line\n";
+            } else {
+                print STDERR "Bad line from show config: $line\n";
+            }
+        }
+    }
+
+    return $config;
 }
 
 1;
