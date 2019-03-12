@@ -43,11 +43,12 @@ case "$1" in
 
         # systemd uses the unified cgroup-v2. If we keep it, "systemctl
         # daemon-reload" will trash our work and reset the v1 cgroups.
-        if [[ -d "/sys/fs/cgroup/unified/" ]]; then
+        unified=`mount | awk '$4=="type"&&$5=="cgroup2"{print $3}' | tail -n 1`
+        if [[ -n "${unified}" && -d "${unified}" ]]; then
             jobdir=`awk -F: '$3~/\/job_/{print $3}' ${_savefile} | head -n 1 | tr / '\n' | grep ^job_`
             uiddir=`awk -F: '$3~/\/uid_/{print $3}' ${_savefile} | head -n 1 | tr / '\n' | grep ^uid_`
-            mkdir -p /sys/fs/cgroup/unified/slurm/$uiddir/$jobdir
-            echo $_ppid >> /sys/fs/cgroup/unified/slurm/$uiddir/$jobdir/cgroup.procs
+            mkdir -p "${unified}"/slurm/$uiddir/$jobdir
+            echo $_ppid >> "${unified}"/slurm/$uiddir/$jobdir/cgroup.procs
         fi
 
         rm "${_savefile}"
