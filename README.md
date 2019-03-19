@@ -12,6 +12,7 @@ School of Computer Science and Engineering.
 * [functions.bash](#functionsbash)
 * [cshuji/Slurm.pm](#cshujislurmpm)
 * [Makefile](#makefile)
+* [slurm-resource-monitor](#slurm-resource-monitor)
 
 ## pam\_slurm\_save\_cgroups\.sh
 
@@ -171,3 +172,7 @@ This is currently only used to run the perl module tests:
 ```
 make test
 ```
+
+## slurm-resource-monitor
+
+TBD

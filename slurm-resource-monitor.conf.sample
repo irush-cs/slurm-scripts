@@ -1,0 +1,22 @@
+
+#
+# Notification script when limits are exceeded. Without this, the monitor won't
+# be very effective
+#
+NotificationScript=/etc/slurm/slurm-monitor-notification.sh
+
+#
+# Comma seperated of recipients. Either an email, a user name, or "*LOGIN*"
+# (the default)
+# 
+NotificationRecipients=*LOGIN*
+
+#
+# Like NotificationRecipients, but in BCC
+# 
+NotificationBcc=
+
+#
+# The reply-to address of the notification mail
+# 
+NotificationReplyto=slurm

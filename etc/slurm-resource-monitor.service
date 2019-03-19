@@ -1,0 +1,12 @@
+
+[Unit]
+Requires=slurmd.service
+
+[Service]
+Type=simple
+User=nobody
+ExecStart=/cs/system/irush/system/slurm/scripts.git/slurm-resource-monitor.pl
+SyslogIdentifier=slurm-resource-monitor
+
+[Install]
+WantedBy=multi-user.target
