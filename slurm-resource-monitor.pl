@@ -91,55 +91,94 @@ foreach my $type (keys %states) {
     }
 }
 
-################################################################################
-# get configuration
-################################################################################
+my $conffile;
+my $conf_update_check_interval = 60 * 60;
+my $conf_last_update = 0;
+my $conf_update_check = 0;
+my $config;
 
-my $slurm_config = cshuji::Slurm::get_config();
-my $conffile = $slurm_config->{SLURM_CONF};
-my $cluster = $slurm_config->{ClusterName};
-
-$conffile =~ s@/[^/]*$@@;
-$conffile .= "/slurm-resource-monitor.conf";
-unless (-e $conffile) {
-    print STDERR "$conffile doesn't exist\n";
-    exit 2;
-}
-my $config = cshuji::Slurm::parse_conf($conffile);
-
-unless (-x $config->{notificationscript}) {
-    print STDERR "NotificationScript: \"$config->{notificationscript}\" isn't executable\n";
-    exit 3;
-}
-
-my $recipients = "*LOGIN*";
-if (exists $config->{notificationrecipients}) {
-    $recipients = $config->{notificationrecipients};
-}
 my @recipients;
-foreach my $recipient (split /,/, $recipients) {
-    $recipient =~ s/^\s*|\s*$//g;
-    next unless $recipient;
-    push @recipients, $recipient;
-}
-unless (@recipients) {
-    print STDERR "Warning: No recipients\n";
-}
+
+my $temp;
 
 ################################################################################
 # get options
 ################################################################################
 if (!GetOptions('v|verbose+' => \$verbose,
+                'c|conf=s' => \$conffile,
                )) {
-    print STDERR "usage: slurm-resource-monitor [-v]\n";
-    print STDERR "  -v  verbose level\n";
+    print STDERR "usage: slurm-resource-monitor [-v] [-c <conf>]\n";
+    print STDERR "  -v        - verbose level\n";
+    print STDERR "  -c <conf> - use <conf> as configuration file\n";
     exit 1;
 }
+
+################################################################################
+# get configuration
+################################################################################
+
+my $slurm_config = cshuji::Slurm::get_config();
+my $cluster = $slurm_config->{ClusterName};
+unless ($conffile) {
+    $conffile = $slurm_config->{SLURM_CONF};
+    $conffile =~ s@/[^/]*$@@;
+    $conffile .= "/slurm-resource-monitor.conf";
+    unless (-e $conffile) {
+        print STDERR "$conffile doesn't exist\n";
+        exit 2;
+    }
+}
+
+sub read_conf {
+    print "(re-)reading configuration: $conffile\n" if $verbose;
+
+    $conf_last_update = (stat $conffile)[9];
+    $conf_update_check = time;
+    $config = cshuji::Slurm::parse_conf($conffile);
+
+    unless (-x $config->{notificationscript}) {
+        print STDERR "NotificationScript: \"$config->{notificationscript}\" isn't executable\n";
+        exit 3;
+    }
+
+    my $recipients = "*LOGIN*";
+    if (exists $config->{notificationrecipients}) {
+        $recipients = $config->{notificationrecipients};
+    }
+    foreach my $recipient (split /,/, $recipients) {
+        $recipient =~ s/^\s*|\s*$//g;
+        next unless $recipient;
+        push @recipients, $recipient;
+    }
+    unless (@recipients) {
+        print STDERR "Warning: No recipients\n";
+    }
+
+    if ($config->{confupdatecheckinterval}) {
+        $temp = $conf_update_check_interval;
+        $conf_update_check_interval = $config->{confupdatecheckinterval};
+        if ($conf_update_check_interval !~ m/^\d+$/) {
+            print STDERR "Bad configuration: ConfUpdateCheckInterval is not a number ($conf_update_check_interval)\n";
+            exit 10;
+        }
+        print "Updating conf_update_check_interval: $temp -> $conf_update_check_interval\n" if $verbose and $temp !=- $conf_update_check_interval;
+    }
+    # clear stats, parameters might have changed
+    %stats = ();
+}
+
+read_conf();
 
 ################################################################################
 # Main loop
 ################################################################################
 while (1) {
+    if (time - $conf_update_check > $conf_update_check_interval) {
+        my $new_conf_update = (stat $conffile)[9];
+        if ($new_conf_update != $conf_last_update) {
+            read_conf();
+        }
+    }
     print "current jobs: ".join(", ", sort keys %stats)."\n" if $verbose;
     get_new_jobs();
     clean_old();

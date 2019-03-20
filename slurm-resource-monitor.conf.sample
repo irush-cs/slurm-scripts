@@ -3,7 +3,7 @@
 # Notification script when limits are exceeded. Without this, the monitor won't
 # be very effective
 #
-NotificationScript=/etc/slurm/slurm-monitor-notification.sh
+NotificationScript=/etc/slurm/slurm-monitor-notification.pl
 
 #
 # Comma seperated of recipients. Either an email, a user name, or "*LOGIN*"
@@ -20,3 +20,8 @@ NotificationBcc=
 # The reply-to address of the notification mail
 # 
 NotificationReplyto=slurm
+
+#
+# Interval in seconds to check if config file has been updated
+#
+ConfUpdateCheckInterval=3600
