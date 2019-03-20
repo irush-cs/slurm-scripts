@@ -23,6 +23,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_config
                     get_jobs
                     parse_conf
+                    time2sec
                   );
 our @EXPORT = qw();
 
@@ -603,6 +604,42 @@ sub get_config {
     }
 
     return $config;
+}
+
+
+=head2 time2sec
+
+ $results = time2sec($interval)
+
+Converts Slurm time interval to seconds. Returns undef on error.
+
+=cut
+
+sub time2sec {
+    my $time = shift;
+    my $seconds = undef;
+
+    if ($time =~ m/^\d+$/) {
+        # "minutes"
+        $seconds = $time * 60;
+    } elsif ($time =~ m/^(\d+):(\d+)$/) {
+        # "minutes:seconds"
+        $seconds = $1 * 60 + $2;
+    } elsif ($time =~ m/^(\d+):(\d+):(\d+)$/) {
+        # "hours:minutes:seconds"
+        $seconds = $1 * 60 * 60 + $2 * 60 + $3;
+    } elsif ($time =~ m/^(\d+)-(\d+)$/) {
+        # "days-hours"
+        $seconds = $1 * 24 * 60 * 60 + $2 * 60 * 60;
+    } elsif ($time =~ m/^(\d+)-(\d+):(\d+)$/) {
+        # "days-hours:minutes"
+        $seconds = $1 * 24 * 60 * 60 + $2 * 60 * 60 + $3 * 60;
+    } elsif ($time =~ m/^(\d+)-(\d+):(\d+):(\d+)$/) {
+        # "days-hours:minutes:seconds".
+        $seconds = $1 * 24 * 60 * 60 + $2 * 60 * 60 + $3 * 60 + $4;
+    }
+
+    return $seconds;
 }
 
 1;
