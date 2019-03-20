@@ -25,3 +25,8 @@ NotificationReplyto=slurm
 # Interval in seconds to check if config file has been updated
 #
 ConfUpdateCheckInterval=3600
+
+#
+# Minimum running time of jobs to notify, in seconds.
+#
+MinRunTime=1800

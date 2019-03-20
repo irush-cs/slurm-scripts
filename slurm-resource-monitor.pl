@@ -32,6 +32,7 @@ use List::Util qw(none any);
 use Data::Dumper;
 use Getopt::Long;
 use Sys::Hostname;
+use Time::ParseDate;
 
 ################################################################################
 # Some variables
@@ -40,6 +41,8 @@ my $interval = 2;
 my $hostname = hostname;
 my $havegpus = 0;
 my $verbose = 0;
+my $debug = 0;
+my $minruntime = 60 * 30;
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -105,13 +108,16 @@ my $temp;
 # get options
 ################################################################################
 if (!GetOptions('v|verbose+' => \$verbose,
-                'c|conf=s' => \$conffile,
+                'c|conf=s'   => \$conffile,
+                'd|debug!'   => \$debug,
                )) {
     print STDERR "usage: slurm-resource-monitor [-v] [-c <conf>]\n";
     print STDERR "  -v        - verbose level\n";
+    print STDERR "  -d        - debug\n";
     print STDERR "  -c <conf> - use <conf> as configuration file\n";
     exit 1;
 }
+$verbose = 1 if $debug;
 
 ################################################################################
 # get configuration
@@ -130,7 +136,7 @@ unless ($conffile) {
 }
 
 sub read_conf {
-    print "(re-)reading configuration: $conffile\n" if $verbose;
+    print "Reading configuration: $conffile\n";
 
     $conf_last_update = (stat $conffile)[9];
     $conf_update_check = time;
@@ -161,7 +167,17 @@ sub read_conf {
             print STDERR "Bad configuration: ConfUpdateCheckInterval is not a number ($conf_update_check_interval)\n";
             exit 10;
         }
-        print "Updating conf_update_check_interval: $temp -> $conf_update_check_interval\n" if $verbose and $temp !=- $conf_update_check_interval;
+        print "Updating conf_update_check_interval: $temp -> $conf_update_check_interval\n" if $verbose and $temp != $conf_update_check_interval;
+    }
+
+    if ($config->{minruntime}) {
+        $temp = $minruntime;
+        $minruntime = $config->{minruntime};
+        if ($minruntime !~ m/^\d+$/) {
+            print STDERR "Bad configuration: MinRunTime is not a number ($minruntime)\n";
+            exit 11;
+        }
+        print "Updating minruntime: $temp -> $minruntime\n" if $verbose and $temp != $minruntime;
     }
     # clear stats, parameters might have changed
     %stats = ();
@@ -179,7 +195,7 @@ while (1) {
             read_conf();
         }
     }
-    print "current jobs: ".join(", ", sort keys %stats)."\n" if $verbose;
+    print "current jobs: ".join(", ", map {"$_/$stats{$_}{state}"} sort keys %stats)."\n" if $verbose;
     get_new_jobs();
     clean_old();
     gpu_utilization() if $havegpus;
@@ -233,6 +249,7 @@ sub get_new_jobs {
                 }
             }
             $stats{$job->{JobId}}{state} = $job->{JobState};
+            $stats{$job->{JobId}}{runtime} = $job->{RunTime};
         }
     }
 
@@ -256,24 +273,28 @@ sub clean_old {
         delete $stats{$old};
         next if exists $oldjobs{$old};
         $oldjobs{$old} = $job;
+        print "old job: ".Dumper($job) if $debug;
         my $notify = 0;
         $job->{cluster} = $cluster;
         $job->{node} = $hostname;
-        foreach my $res ("cpus", "gpus") {
-            $job->{$res}{baduse} = 0;
-            $job->{$res}{gooduse} = 0;
-            foreach my $count (keys %{$job->{$res}{usage}}) {
-                if ($job->{$res}{count} - $count > $allowedunused{$res}{count}) {
-                    $job->{$res}{baduse} += $job->{$res}{usage}{$count};
-                } else {
-                    $job->{$res}{gooduse} += $job->{$res}{usage}{$count};
+        my $runtime = cshuji::Slurm::time2sec($job->{runtime});
+        if ($runtime > $minruntime) {
+            foreach my $res ("cpus", "gpus") {
+                $job->{$res}{baduse} = 0;
+                $job->{$res}{gooduse} = 0;
+                foreach my $count (keys %{$job->{$res}{usage}}) {
+                    if ($job->{$res}{count} - $count > $allowedunused{$res}{count}) {
+                        $job->{$res}{baduse} += $job->{$res}{usage}{$count};
+                    } else {
+                        $job->{$res}{gooduse} += $job->{$res}{usage}{$count};
+                    }
                 }
-            }
-            if ($job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
-                if ($job->{$res}{samples} * $allowedunused{$res}{percent} < $job->{$res}{baduse}) {
-                    $job->{$res}{allowedunused} = {%{$allowedunused{$res}}};
-                    $job->{$res}{notify} = 1;
-                    $notify = 1;
+                if ($job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
+                    if ($job->{$res}{samples} * $allowedunused{$res}{percent} < $job->{$res}{baduse}) {
+                        $job->{$res}{allowedunused} = {%{$allowedunused{$res}}};
+                        $job->{$res}{notify} = 1;
+                        $notify = 1;
+                    }
                 }
             }
         }
@@ -299,6 +320,7 @@ sub clean_old {
 sub gpu_utilization {
 
     # get the load
+    my $stamp = time;
     my @load = `nvidia-smi --query-gpu=utilization.gpu --format=csv,nounits,noheader`;
     if ($!) {
         print STDERR "Can't get gpu information\n";
@@ -308,6 +330,8 @@ sub gpu_utilization {
 
     foreach my $job (values %stats) {
         next unless $states{sample}{$job->{state}};
+        $job->{gpus}{firststamp} = $stamp unless exists $job->{gpus}{firststamp};
+        $job->{gpus}{laststamp} = $stamp;
 
         # calculate and save the load
         my $totalusage = 0;
@@ -369,6 +393,7 @@ sub cpu_utilization {
             print STDERR "Can't get cpuacct from cpuacct.usage_percpu for job $job->{jobid}\n";
             next;
         }
+        $job->{cpus}{firststamp} = $stamp unless exists $job->{cpus}{firststamp};
 
         # calculate and save the load
         my $totalusage = 0;
