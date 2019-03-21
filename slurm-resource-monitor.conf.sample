@@ -30,3 +30,8 @@ ConfUpdateCheckInterval=3600
 # Minimum running time of jobs to notify, in seconds.
 #
 MinRunTime=1800
+
+#
+# Notify about short jobs if RunTime is less than TimeLimit by this percent
+#
+ShortJobPercent=15

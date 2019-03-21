@@ -27,6 +27,7 @@ use lib "$scriptdir";
 
 use cshuji::Slurm;
 
+use POSIX qw(round);
 use File::Find;
 use List::Util qw(none any);
 use Data::Dumper;
@@ -43,6 +44,7 @@ my $havegpus = 0;
 my $verbose = 0;
 my $debug = 0;
 my $minruntime = 60 * 30;
+my $shortjobpercent = 15;
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -179,6 +181,17 @@ sub read_conf {
         }
         print "Updating minruntime: $temp -> $minruntime\n" if $verbose and $temp != $minruntime;
     }
+
+    if ($config->{shortjobpercent}) {
+        $temp = $shortjobpercent;
+        $shortjobpercent = $config->{shortjobpercent};
+        if ($shortjobpercent !~ m/^\d+$/ or $shortjobpercent < 0 or $shortjobpercent > 100) {
+            pritn STDERR "Bad configuration: ShortJobPercent is not a percent ($shortjobpercent)\n";
+            exit 12;
+        }
+        print "Updating shortjobpercent: $temp -> $shortjobpercent\n" if $verbose and $temp != $shortjobpercent;
+    }
+
     # clear stats, parameters might have changed
     %stats = ();
 }
@@ -220,6 +233,7 @@ sub get_new_jobs {
     foreach my $old (values %stats) {
         delete $old->{state};
     }
+    my $stamp = time;
     my $jobs = cshuji::Slurm::get_jobs();
     foreach my $job (values %$jobs) {
         if (any {$_ eq $hostname} @{$job->{_NodeList}}) {
@@ -250,6 +264,9 @@ sub get_new_jobs {
             }
             $stats{$job->{JobId}}{state} = $job->{JobState};
             $stats{$job->{JobId}}{runtime} = $job->{RunTime};
+            $stats{$job->{JobId}}{timelimit} = $job->{TimeLimit};
+            $stats{$job->{JobId}}{firststamp} = $stamp unless exists $stats{$job->{JobId}}{firststamp};
+            $stats{$job->{JobId}}{laststamp} = $stamp;
         }
     }
 
@@ -278,7 +295,8 @@ sub clean_old {
         $job->{cluster} = $cluster;
         $job->{node} = $hostname;
         my $runtime = cshuji::Slurm::time2sec($job->{runtime});
-        if ($runtime > $minruntime) {
+        my $timelimit = cshuji::Slurm::time2sec($job->{timelimit});
+        if ($runtime > $minruntime and $job->{laststamp} - $job->{firststamp} > $minruntime) {
             foreach my $res ("cpus", "gpus") {
                 $job->{$res}{baduse} = 0;
                 $job->{$res}{gooduse} = 0;
@@ -296,6 +314,15 @@ sub clean_old {
                         $notify = 1;
                     }
                 }
+            }
+
+            my $runtimepercent = (100 * ($runtime / $timelimit));
+            if ($job->{state} eq "COMPLETED" and
+                $runtimepercent < $shortjobpercent) {
+                $notify = 1;
+                $job->{runtimepercent} = round($runtimepercent);
+                $job->{shortjobpercent} = $shortjobpercent;
+                $job->{shortjobnotify} = 1;
             }
         }
         if ($notify) {
