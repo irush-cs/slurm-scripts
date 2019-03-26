@@ -35,6 +35,8 @@ use Getopt::Long;
 use Sys::Hostname;
 use Time::ParseDate;
 
+$Data::Dumper::Sortkeys = 1;
+
 ################################################################################
 # Some variables
 ################################################################################
@@ -45,6 +47,9 @@ my $verbose = 0;
 my $debug = 0;
 my $minruntime = 60 * 30;
 my $shortjobpercent = 15;
+my $notifyshortjob = 1;
+my %notifyunused = (cpus => 1,
+                    gpus => 1);
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -137,6 +142,20 @@ unless ($conffile) {
     }
 }
 
+sub to_bool {
+    my $value = shift;
+    my $default = shift;
+
+    return $default unless defined $value;
+
+    if ($value =~ m/^yes|true|1$/i) {
+        return 1;
+    } elsif ($value =~ m/^no|false|0$/i) {
+        return 0;
+    }
+    return $default;
+}
+
 sub read_conf {
     print "Reading configuration: $conffile\n";
 
@@ -186,11 +205,41 @@ sub read_conf {
         $temp = $shortjobpercent;
         $shortjobpercent = $config->{shortjobpercent};
         if ($shortjobpercent !~ m/^\d+$/ or $shortjobpercent < 0 or $shortjobpercent > 100) {
-            pritn STDERR "Bad configuration: ShortJobPercent is not a percent ($shortjobpercent)\n";
+            print STDERR "Bad configuration: ShortJobPercent is not a percent ($shortjobpercent)\n";
             exit 12;
         }
         print "Updating shortjobpercent: $temp -> $shortjobpercent\n" if $verbose and $temp != $shortjobpercent;
     }
+
+    sub _update_setting {
+        my $var = shift;
+        my $new = shift;
+        my $type = shift;
+        my $name = shift;
+
+        if (defined $new) {
+            $temp = $$var;
+            $$var = $new;
+            if ($type eq "bool") {
+                if ($$var =~ m/^yes|true|1$/i) {
+                    $$var = 1;
+                } elsif ($$var =~ m/^no|false|0$/i) {
+                    $$var = 0;
+                } else {
+                    print STDERR "Bad configuration: $name is not boolean ($new)\n";
+                    exit 13;
+                }
+            } else {
+                print STDERR "Bad configuration type: \"$type\"\n";
+                exit 12;
+            }
+            print "Updating $name: $temp -> $$var\n" if $verbose and $temp != $$var;
+        }
+    }
+
+    _update_setting(\$notifyshortjob, $config->{notifyshortjob}, "bool", "NotifyShortJob");
+    _update_setting(\$notifyunused{cpus}, $config->{notifyunusedcpus}, "bool", "NotifyUnusedCPUs");
+    _update_setting(\$notifyunused{gpus}, $config->{notifyunusedgpus}, "bool", "NotifyUnusedGPUs");
 
     # clear stats, parameters might have changed
     %stats = ();
@@ -237,8 +286,14 @@ sub get_new_jobs {
     my $jobs = cshuji::Slurm::get_jobs();
     foreach my $job (values %$jobs) {
         if (any {$_ eq $hostname} @{$job->{_NodeList}}) {
-            # intizalize structure for new jobs
-            unless (exists $stats{$job->{JobId}}) {
+
+            # put this just to keep track on something that still in get_jobs()
+            if (exists $oldjobs{$job->{JobId}}) {
+                $stats{$job->{JobId}} //= {jobid => $job->{JobId}};
+
+             # intizalize structure for new jobs
+            } elsif (not exists $stats{$job->{JobId}}) {
+
                 my $cpus = [];
                 my $gpus = [];
                 foreach my $detail (@{$job->{_DETAILS}}) {
@@ -257,6 +312,27 @@ sub get_new_jobs {
                               };
                 $jobstat->{gpus}{usage} = {map {$_ => 0} (0 .. scalar(keys %$gpus))};
                 $jobstat->{cpus}{usage} = {map {$_ => 0} (0 .. scalar(keys %$cpus))};
+
+                my $uconfig = (getpwnam($jobstat->{login}))[7];
+                $uconfig .= '/.slurm-resource-monitor';
+                if (-r $uconfig) {
+                    print "Reading user config $uconfig\n" if $verbose;
+                    $uconfig = cshuji::Slurm::parse_conf($uconfig);
+                    $uconfig //= {};
+                } else {
+                    print "No readable user config $uconfig\n" if $verbose;
+                    $uconfig = {};
+                }
+                $uconfig->{notifyshortjob} = to_bool($uconfig->{notifyshortjob}, $notifyshortjob);
+                $uconfig->{notifyunusedgpus} = to_bool($uconfig->{notifyunusedgpus}, $notifyunused{gpus});
+                $uconfig->{notifyunusedcpus} = to_bool($uconfig->{notifyunusedcpus}, $notifyunused{cpus});
+
+                $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
+                $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
+                $jobstat->{cpus}{notifyunused} = $uconfig->{notifyunusedcpus};
+
+                $jobstat->{firststamp} = $stamp;
+
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
                     print "New job $jobstat->{jobid}: cpus: $jobstat->{cpus}{count}, gpus: $jobstat->{gpus}{count}, state: $job->{JobState}\n";
@@ -265,7 +341,6 @@ sub get_new_jobs {
             $stats{$job->{JobId}}{state} = $job->{JobState};
             $stats{$job->{JobId}}{runtime} = $job->{RunTime};
             $stats{$job->{JobId}}{timelimit} = $job->{TimeLimit};
-            $stats{$job->{JobId}}{firststamp} = $stamp unless exists $stats{$job->{JobId}}{firststamp};
             $stats{$job->{JobId}}{laststamp} = $stamp;
         }
     }
@@ -290,7 +365,6 @@ sub clean_old {
         delete $stats{$old};
         next if exists $oldjobs{$old};
         $oldjobs{$old} = $job;
-        print "old job: ".Dumper($job) if $debug;
         my $notify = 0;
         $job->{cluster} = $cluster;
         $job->{node} = $hostname;
@@ -307,7 +381,7 @@ sub clean_old {
                         $job->{$res}{gooduse} += $job->{$res}{usage}{$count};
                     }
                 }
-                if ($job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
+                if ($job->{$res}{notifyunused} and $job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
                     if ($job->{$res}{samples} * $allowedunused{$res}{percent} < $job->{$res}{baduse}) {
                         $job->{$res}{allowedunused} = {%{$allowedunused{$res}}};
                         $job->{$res}{notify} = 1;
@@ -318,13 +392,15 @@ sub clean_old {
 
             my $runtimepercent = (100 * ($runtime / $timelimit));
             if ($job->{state} eq "COMPLETED" and
-                $runtimepercent < $shortjobpercent) {
+                $runtimepercent < $shortjobpercent and
+                $job->{notifyshortjob}) {
                 $notify = 1;
                 $job->{runtimepercent} = round($runtimepercent);
                 $job->{shortjobpercent} = $shortjobpercent;
                 $job->{shortjobnotify} = 1;
             }
         }
+        print "old job: ".Dumper($job) if $debug;
         if ($notify) {
             $job->{recipients} = [@recipients];
             if ($config->{notificationreplyto}) {
