@@ -42,7 +42,7 @@ foreach my $res (qw(cpus gpus)) {
         $body .= "$res usage:\n";
 
         my $table = Text::Table->new({title => "# $res", align => "right", align_title => "right"}, \" | ", {title => "% of time used", align => "right", align_title => "left"});
-        foreach my $count (reverse sort {$a cmp $b} keys %{$job->{$res}{usage}}) {
+        foreach my $count (reverse sort {$a <=> $b} keys %{$job->{$res}{usage}}) {
             $table->add($count, round(100 * $job->{$res}{usage}{$count} / $job->{$res}{samples}).'%');
         }
         $body .= $table->title();
