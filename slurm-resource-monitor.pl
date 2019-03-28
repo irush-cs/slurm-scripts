@@ -74,9 +74,9 @@ my $minsamples = 5;
 
 # allow unused <count> <resource>s for at most <percent>% of the time.
 my %allowedunused = (cpus => {count => 2,
-                              percent => 0.25},
+                              percent => 25},
                      gpus => {count => 0,
-                              percent => 0.25});
+                              percent => 25});
 
 # states:
 #   report  => send mail,
@@ -234,6 +234,11 @@ sub read_conf {
                     print STDERR "Bad configuration: $name is not a percent ($new)\n";
                     exit 13;
                 }
+            } elsif ($type eq "int") {
+                if ($new !~ m/^\d+$/) {
+                    print STDERR "Bad configuration: $name is not a integer ($new)\n";
+                    exit 13;
+                }
             } else {
                 print STDERR "Bad configuration type: \"$type\"\n";
                 exit 12;
@@ -248,6 +253,11 @@ sub read_conf {
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
+
+    _update_setting(\$allowedunused{cpus}{count}, $config->{allowedunusedcpus}, "int", "AllowedUnusedCPUs");
+    _update_setting(\$allowedunused{cpus}{percent}, $config->{allowedunusedcpupercent}, "percent", "AllowedUnusedCPUPercent");
+    _update_setting(\$allowedunused{gpus}{count}, $config->{allowedunusedgpus}, "int", "AllowedUnusedGPUs");
+    _update_setting(\$allowedunused{gpus}{percent}, $config->{allowedunusedgpupercent}, "percent", "AllowedUnusedGPUPercent");
 
     # clear stats, parameters might have changed
     %stats = ();
@@ -390,7 +400,7 @@ sub clean_old {
                     }
                 }
                 if ($job->{$res}{notifyunused} and $job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
-                    if ($job->{$res}{samples} * $allowedunused{$res}{percent} < $job->{$res}{baduse}) {
+                    if ($job->{$res}{samples} * ($allowedunused{$res}{percent} / 100) < $job->{$res}{baduse}) {
                         $job->{$res}{allowedunused} = {%{$allowedunused{$res}}};
                         $job->{$res}{notify} = 1;
                         $notify = 1;

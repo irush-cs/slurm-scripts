@@ -48,3 +48,15 @@ NotifyUnusedGPUs=Yes
 #
 InUseCPUPercent=5
 InUseGPUPercent=15
+
+#
+# The number of allowed unused resources (cpus or gpus)
+#
+AllowedUnusedCPUs=2
+AllowedUnusedGPUs=0
+
+#
+# The percent of the time which the unused resources (cpus or gpus) is allowed
+#
+AllowedUnusedCPUPercent=25
+AllowedUnusedGPUPercent=25
