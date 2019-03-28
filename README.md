@@ -104,8 +104,9 @@ Returns the maintainers list from `cluster.conf`
 A perl module with slurm utility functions (mostly parsing slurm commands
 output).
 
-To install, the cshuji directory needs to be in the standard perl package
-paths, or the `PERL5LIB` environment variable needs to be set appropriately.
+To install, the cshuji directory needs to be in the standard perl package paths
+(such as `/usr/local/lib/site_perl`), or the `PERL5LIB` environment variable
+needs to be set appropriately.
 
 ### parse\_scontrol\_show
 
@@ -175,4 +176,4 @@ make test
 
 ## slurm-resource-monitor
 
-TBD
+See [slurm-resource-monitor.md](slurm-resource-monitor.md)

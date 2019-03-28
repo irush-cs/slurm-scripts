@@ -1,3 +1,4 @@
+# -*- conf -*-
 
 [Unit]
 Requires=slurmd.service
@@ -5,7 +6,7 @@ Requires=slurmd.service
 [Service]
 Type=simple
 User=nobody
-ExecStart=/cs/system/irush/system/slurm/scripts.git/slurm-resource-monitor.pl
+ExecStart=/usr/local/bin/slurm-resource-monitor.pl
 SyslogIdentifier=slurm-resource-monitor
 
 [Install]
