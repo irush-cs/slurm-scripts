@@ -366,8 +366,12 @@ sub get_new_jobs {
         }
     }
 
+    $havegpus = 0;
     foreach my $job (values %stats) {
-        $havegpus ||= scalar(keys %{$job->{gpus}}) > 0;
+        if ($job->{gpus}{count} and $job->{gpus}{count} > 0) {
+            $havegpus = 1;
+            last;
+        }
     }
 
     # delete missing old jobs
