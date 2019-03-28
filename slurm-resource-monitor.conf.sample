@@ -60,3 +60,8 @@ AllowedUnusedGPUs=0
 #
 AllowedUnusedCPUPercent=25
 AllowedUnusedGPUPercent=25
+
+#
+# The minimum percent of the job's total runtime which it needs to be monitored
+#
+MinMonitoredPercent=75

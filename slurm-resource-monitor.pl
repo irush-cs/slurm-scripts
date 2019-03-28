@@ -50,6 +50,7 @@ my $shortjobpercent = 15;
 my $notifyshortjob = 1;
 my %notifyunused = (cpus => 1,
                     gpus => 1);
+my $minmonitoredpercent = 75;
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -259,6 +260,8 @@ sub read_conf {
     _update_setting(\$allowedunused{gpus}{count}, $config->{allowedunusedgpus}, "int", "AllowedUnusedGPUs");
     _update_setting(\$allowedunused{gpus}{percent}, $config->{allowedunusedgpupercent}, "percent", "AllowedUnusedGPUPercent");
 
+    _update_setting(\$minmonitoredpercent, $config->{minmonitoredpercent}, "percent", "MinMonitoredPercent");
+
     # clear stats, parameters might have changed
     %stats = ();
 }
@@ -388,7 +391,10 @@ sub clean_old {
         $job->{node} = $hostname;
         my $runtime = cshuji::Slurm::time2sec($job->{runtime});
         my $timelimit = cshuji::Slurm::time2sec($job->{timelimit});
-        if ($runtime > $minruntime and $job->{laststamp} - $job->{firststamp} > $minruntime) {
+        if ($runtime >= $minruntime and
+            $job->{laststamp} - $job->{firststamp} >= $minruntime and
+            (100 * ($job->{laststamp} - $job->{firststamp}) / $runtime) >= $minmonitoredpercent
+           ) {
             foreach my $res ("cpus", "gpus") {
                 $job->{$res}{baduse} = 0;
                 $job->{$res}{gooduse} = 0;
