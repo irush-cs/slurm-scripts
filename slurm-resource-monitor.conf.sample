@@ -65,3 +65,13 @@ AllowedUnusedGPUPercent=25
 # The minimum percent of the job's total runtime which it needs to be monitored
 #
 MinMonitoredPercent=75
+
+#
+# Sampling interval
+#
+SamplingInterval=60
+
+#
+# Minimum number of samples for reporting.
+#
+MinSamples=10

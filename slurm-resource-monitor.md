@@ -190,3 +190,13 @@ AllowedUnusedGPUPercent), a notification is sent.
 
 If the job is monitored less than this percent of the total runtime, no
 notification will be sent.
+
+### SamplingInterval
+
+The sleep duration between each sample. To low will load the node, to high will
+give inaccurate results.
+
+### MinSamples
+
+The minimum number of samples for reporting. This will be apply separately for
+the CPU and GPU sampling.

@@ -40,7 +40,7 @@ $Data::Dumper::Sortkeys = 1;
 ################################################################################
 # Some variables
 ################################################################################
-my $interval = 2;
+my $samplinginterval = 60;
 my $hostname = hostname;
 my $havegpus = 0;
 my $verbose = 0;
@@ -71,7 +71,7 @@ my %oldjobs;
 my $inusecpupercent = 5;
 my $inusegpupercent = 15;
 
-my $minsamples = 5;
+my $minsamples = 10;
 
 # allow unused <count> <resource>s for at most <percent>% of the time.
 my %allowedunused = (cpus => {count => 2,
@@ -262,6 +262,14 @@ sub read_conf {
 
     _update_setting(\$minmonitoredpercent, $config->{minmonitoredpercent}, "percent", "MinMonitoredPercent");
 
+    _update_setting(\$samplinginterval, $config->{samplinginterval}, "int", "SamplingInterval");
+    if ($samplinginterval < 1) {
+        print STDERR "Bad configuration: SamplingInterval should be > 0\n";
+        exit 14;
+    }
+
+    _update_setting(\$minsamples, $config->{minsamples}, "int", "MinSamples");
+
     # clear stats, parameters might have changed
     %stats = ();
 }
@@ -290,7 +298,7 @@ while (1) {
             exit 4;
         }
     }
-    sleep $interval;
+    sleep $samplinginterval;
 }
 
 exit 0;
