@@ -182,36 +182,6 @@ sub read_conf {
         print STDERR "Warning: No recipients\n";
     }
 
-    if ($config->{confupdatecheckinterval}) {
-        $temp = $conf_update_check_interval;
-        $conf_update_check_interval = $config->{confupdatecheckinterval};
-        if ($conf_update_check_interval !~ m/^\d+$/) {
-            print STDERR "Bad configuration: ConfUpdateCheckInterval is not a number ($conf_update_check_interval)\n";
-            exit 10;
-        }
-        print "Updating conf_update_check_interval: $temp -> $conf_update_check_interval\n" if $verbose and $temp != $conf_update_check_interval;
-    }
-
-    if ($config->{minruntime}) {
-        $temp = $minruntime;
-        $minruntime = $config->{minruntime};
-        if ($minruntime !~ m/^\d+$/) {
-            print STDERR "Bad configuration: MinRunTime is not a number ($minruntime)\n";
-            exit 11;
-        }
-        print "Updating minruntime: $temp -> $minruntime\n" if $verbose and $temp != $minruntime;
-    }
-
-    if ($config->{shortjobpercent}) {
-        $temp = $shortjobpercent;
-        $shortjobpercent = $config->{shortjobpercent};
-        if ($shortjobpercent !~ m/^\d+$/ or $shortjobpercent < 0 or $shortjobpercent > 100) {
-            print STDERR "Bad configuration: ShortJobPercent is not a percent ($shortjobpercent)\n";
-            exit 12;
-        }
-        print "Updating shortjobpercent: $temp -> $shortjobpercent\n" if $verbose and $temp != $shortjobpercent;
-    }
-
     sub _update_setting {
         my $var = shift;
         my $new = shift;
@@ -269,6 +239,12 @@ sub read_conf {
     }
 
     _update_setting(\$minsamples, $config->{minsamples}, "int", "MinSamples");
+
+    _update_setting(\$conf_update_check_interval, $config->{confupdatecheckinterval}, "int", "ConfUpdateCheckInterval");
+
+    _update_setting(\$minruntime, $config->{minruntime}, "int", "MinRunTime");
+
+    _update_setting(\$shortjobpercent, $config->{shortjobpercent}, "percent", "ShortJobPercent");
 
     # clear stats, parameters might have changed
     %stats = ();
