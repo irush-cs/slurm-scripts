@@ -42,3 +42,9 @@ ShortJobPercent=15
 NotifyShortJob=Yes
 NotifyUnusedCPUs=Yes
 NotifyUnusedGPUs=Yes
+
+#
+# The percentile of cpu or gpu load to be considered in-use.
+#
+InUseCPUPercent=5
+InUseGPUPercent=15

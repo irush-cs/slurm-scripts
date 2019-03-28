@@ -67,8 +67,8 @@ my %stats;
 my %oldjobs; 
 
 # count as in-use threshold
-my $mincpugood = 0.05;
-my $mingpugood = 0.15;
+my $inusecpupercent = 5;
+my $inusegpupercent = 15;
 
 my $minsamples = 5;
 
@@ -229,6 +229,11 @@ sub read_conf {
                     print STDERR "Bad configuration: $name is not boolean ($new)\n";
                     exit 13;
                 }
+            } elsif ($type eq "percent") {
+                if ($new !~ m/^\d+$/ or $new < 0 or $new > 100) {
+                    print STDERR "Bad configuration: $name is not a percent ($new)\n";
+                    exit 13;
+                }
             } else {
                 print STDERR "Bad configuration type: \"$type\"\n";
                 exit 12;
@@ -240,6 +245,9 @@ sub read_conf {
     _update_setting(\$notifyshortjob, $config->{notifyshortjob}, "bool", "NotifyShortJob");
     _update_setting(\$notifyunused{cpus}, $config->{notifyunusedcpus}, "bool", "NotifyUnusedCPUs");
     _update_setting(\$notifyunused{gpus}, $config->{notifyunusedgpus}, "bool", "NotifyUnusedGPUs");
+
+    _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
+    _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
 
     # clear stats, parameters might have changed
     %stats = ();
@@ -441,7 +449,7 @@ sub gpu_utilization {
         my $good = 0;
         foreach my $gpu (keys %{$job->{gpus}{data}}) {
             $job->{gpus}{data}{$gpu}{load} = $load[$gpu];
-            $good++ if $load[$gpu] > $mingpugood;
+            $good++ if (100 * $load[$gpu]) > $inusegpupercent;
         }
         $job->{gpus}{usage}{$good}++;
         $job->{gpus}{samples}++;
@@ -506,7 +514,7 @@ sub cpu_utilization {
                 my $load = ($utilization[$cpu] - $job->{cpus}{data}{$cpu}{lastread});
                 $load = $load / ($stamp - $job->{cpus}{laststamp}) / 1000000000;
                 $job->{cpus}{data}{$cpu}{load} = $load;
-                $good++ if $load > $mincpugood;
+                $good++ if (100 * $load) > $inusecpupercent;
                 $totalusage += $load;
             }
             $totalusage = $totalusage / $job->{cpus}{count};
