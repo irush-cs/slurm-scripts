@@ -53,7 +53,7 @@ foreach my $res (qw(cpus gpus)) {
 }
 
 if ($job->{shortjobnotify}) {
-    $body .= "Your have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is only $job->{runtimepercent}% of the requested time.\n";
+    $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is only $job->{runtimepercent}% of the requested time.\n";
 }
 
 if ($body) {

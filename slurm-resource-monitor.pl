@@ -75,8 +75,8 @@ my $minsamples = 10;
 
 # allow unused <count> <resource>s for at most <percent>% of the time.
 my %allowedunused = (cpus => {count => 2,
-                              percent => 25},
-                     gpus => {count => 0,
+                              percent => 75},
+                     gpus => {count => 1,
                               percent => 25});
 
 # states:
@@ -87,11 +87,13 @@ my %allowedunused = (cpus => {count => 2,
 my %states = (report => {"COMPLETED" => 1,
                          "TIMEOUT" => 1,
                          "FAILED" => 1,
+                         "OUT_OF_MEMORY" => 1,
                         },
               sample => {"RUNNING" => 1,
                         },
               ignore => {"COMPLETING" => 1,
                          "CANCELLED" => 1,
+                         "CONFIGURING" => 1,
                         },
               all => {},
              );
@@ -387,7 +389,7 @@ sub clean_old {
                 $job->{$res}{baduse} = 0;
                 $job->{$res}{gooduse} = 0;
                 foreach my $count (keys %{$job->{$res}{usage}}) {
-                    if ($job->{$res}{count} - $count > $allowedunused{$res}{count}) {
+                    if ($job->{$res}{count} - $count >= $allowedunused{$res}{count}) {
                         $job->{$res}{baduse} += $job->{$res}{usage}{$count};
                     } else {
                         $job->{$res}{gooduse} += $job->{$res}{usage}{$count};

@@ -47,9 +47,9 @@ The number of currently used CPUs is counted and saved in a histogram table
 utilization since the last sample is above `InUseCPUPercent`.
 
 When the job finishes, the number of "good" and "bad" cpu usages is counted. A
-"bad" usage is if the number of unused CPUs is below `AllowedUnusedCPUs`. If
-the percent of "bad" usages is above `AllowedUnusedCPUPercent`, a notification
-is sent.
+"bad" usage is if the number of unused CPUs is equal or greater than
+`AllowedUnusedCPUs`. If the percentage of "bad" usages is above
+`AllowedUnusedCPUPercent`, a notification is sent.
 
 For example, if a process requested 5 CPUs, and 
 ```
@@ -68,8 +68,8 @@ And the usage histogram is
 |      1 |  50%           |
 |      0 |  10%           |
 
-A "good" usage is 4 or 5 CPUs, which was 20% of the time. "bad" usage is 0 - 3
-CPUs, which is 80%. A notification will be sent as 80 > 30.
+A "good" usage is 4 or 5 CPUs, which was 20% of the time. "bad" usage is
+between 0 and 3 CPUs, which is 80%. A notification will be sent as 80 > 30.
 
 ### GPU
 

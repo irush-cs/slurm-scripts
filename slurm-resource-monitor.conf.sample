@@ -53,12 +53,12 @@ InUseGPUPercent=15
 # The number of allowed unused resources (cpus or gpus)
 #
 AllowedUnusedCPUs=2
-AllowedUnusedGPUs=0
+AllowedUnusedGPUs=1
 
 #
 # The percent of the time which the unused resources (cpus or gpus) is allowed
 #
-AllowedUnusedCPUPercent=25
+AllowedUnusedCPUPercent=75
 AllowedUnusedGPUPercent=25
 
 #
