@@ -27,7 +27,7 @@ use lib "$scriptdir";
 
 use cshuji::Slurm;
 
-use POSIX qw(round);
+use POSIX qw(round WNOHANG);
 use File::Find;
 use List::Util qw(none any);
 use Data::Dumper;
@@ -113,6 +113,13 @@ my $config;
 my @recipients;
 
 my $temp;
+
+sub sigCHLD {
+    while (waitpid(-1 , WNOHANG) > 0) {};
+    $SIG{CHLD} = \&sigCHLD;
+}
+
+$SIG{CHLD} = \&sigCHLD;
 
 ################################################################################
 # get options
@@ -452,9 +459,18 @@ sub clean_old {
             if ($config->{notificationbcc}) {
                 $job->{recipientsbcc} = [map {$_ =~ s/^\s*|\s*$//g; $_} split /,/, $config->{notificationbcc}];
             }
-            $ENV{SLURM_RESOURCE_MONITOR_DATA} = Data::Dumper->Dump([$job], [qw(job)]);
-            system($config->{notificationscript});
-            delete $ENV{SLURM_RESOURCE_MONITOR_DATA};
+            my $pid = fork();
+            unless (defined $pid) {
+                print STDERR "fork() failed: $!\n";
+                exit 20;
+            }
+            unless ($pid) {
+                # child
+                exit 1;
+                $ENV{SLURM_RESOURCE_MONITOR_DATA} = Data::Dumper->Dump([$job], [qw(job)]);
+                exec($config->{notificationscript});
+                exit 1;
+            }
         }
         print "Removing job $job->{jobid}".($notify ? " (notified)" : "")."\n";
     }
