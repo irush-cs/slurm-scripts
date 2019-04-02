@@ -159,6 +159,30 @@ sub to_bool {
     return $default;
 }
 
+sub to_int {
+    my $value = shift;
+    my $default = shift;
+
+    return $default unless defined $value;
+
+    if ($value =~ m/^\d+$/) {
+        return $value;
+    }
+    return $default;
+}
+
+sub to_percent {
+    my $value = shift;
+    my $default = shift;
+
+    return $default unless defined $value;
+
+    if ($value =~ m/^\d+$/ and $value < 0 and $value > 100) {
+        return $value;
+    }
+    return $default;
+}
+
 sub read_conf {
     print "Reading configuration: $conffile\n";
 
@@ -333,10 +357,16 @@ sub get_new_jobs {
                 $uconfig->{notifyshortjob} = to_bool($uconfig->{notifyshortjob}, $notifyshortjob);
                 $uconfig->{notifyunusedgpus} = to_bool($uconfig->{notifyunusedgpus}, $notifyunused{gpus});
                 $uconfig->{notifyunusedcpus} = to_bool($uconfig->{notifyunusedcpus}, $notifyunused{cpus});
+                $uconfig->{allowedunusedcpus} = to_int($uconfig->{allowedunusedcpus}, $allowedunused{cpus}{count});
+                $uconfig->{allowedunusedgpus} = to_int($uconfig->{allowedunusedgpus}, $allowedunused{gpus}{count});
+                $uconfig->{allowedunusedcpupercent} = to_percent($uconfig->{allowedunusedcpupercent}, $allowedunused{cpus}{percent});
+                $uconfig->{allowedunusedgpupercent} = to_percent($uconfig->{allowedunusedgpupercent}, $allowedunused{gpus}{percent});
 
                 $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
                 $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
                 $jobstat->{cpus}{notifyunused} = $uconfig->{notifyunusedcpus};
+                $jobstat->{cpus}{allowedunused} = {count => $uconfig->{allowedunusedcpus}, percent => $uconfig->{allowedunusedcpupercent}};
+                $jobstat->{gpus}{allowedunused} = {count => $uconfig->{allowedunusedgpus}, percent => $uconfig->{allowedunusedgpupercent}};
 
                 $jobstat->{firststamp} = $stamp;
 
@@ -389,15 +419,14 @@ sub clean_old {
                 $job->{$res}{baduse} = 0;
                 $job->{$res}{gooduse} = 0;
                 foreach my $count (keys %{$job->{$res}{usage}}) {
-                    if ($job->{$res}{count} - $count >= $allowedunused{$res}{count}) {
+                    if ($job->{$res}{count} - $count >= $job->{$res}{allowedunused}{count}) {
                         $job->{$res}{baduse} += $job->{$res}{usage}{$count};
                     } else {
                         $job->{$res}{gooduse} += $job->{$res}{usage}{$count};
                     }
                 }
                 if ($job->{$res}{notifyunused} and $job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
-                    if ($job->{$res}{samples} * ($allowedunused{$res}{percent} / 100) < $job->{$res}{baduse}) {
-                        $job->{$res}{allowedunused} = {%{$allowedunused{$res}}};
+                    if ($job->{$res}{samples} * ($job->{$res}{allowedunused}{percent} / 100) < $job->{$res}{baduse}) {
                         $job->{$res}{notify} = 1;
                         $notify = 1;
                     }

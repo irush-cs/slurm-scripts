@@ -36,7 +36,7 @@ if (not exists $job->{recipients} or not @{$job->{recipients}}) {
 foreach my $res (qw(cpus gpus)) {
     if ($job->{$res}{notify}) {
         my $badpercent = round(100 * $job->{$res}{baduse} / $job->{$res}{samples});
-        my $baduse = $job->{$res}{count} - $job->{$res}{allowedunused}{count};
+        my $baduse = $job->{$res}{count} - $job->{$res}{allowedunused}{count} + 1;
         $body .= "You have requested $job->{$res}{count} $res, but at least ${badpercent}\% of the time you used less than $baduse $res\n";
         $body .= "\n";
         $body .= "$res usage:\n";

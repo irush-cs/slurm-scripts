@@ -178,13 +178,16 @@ resource "in-use".
 
 ### AllowedUnusedCPUs, AllowedUnusedGPUs
 
-Number of CPUs or GPUs to allow to be unused.
+Number of CPUs or GPUs to allow to be unused. These can be set per user in
+`~/.slurm-resource-monitor`.
 
 ### AllowedUnusedCPUPercent, AllowedUnusedGPUPercent
 
 If the percentage of sampling that didn't use more than that allowed unused
 resource is higher than the AllowedUnusedCPUPercent (or
 AllowedUnusedGPUPercent), a notification is sent.
+
+These can be set per user in `~/.slurm-resource-monitor`.
 
 ### MinMonitoredPercent
 
