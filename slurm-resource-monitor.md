@@ -6,10 +6,34 @@ resources. Currently monitored are: CPU, GPU, and time limit.
 
 # Table of Contents
 
+* [Installation](#Installation)
 * [slurm-resource-monitor.pl](#slurm-resource-monitorpl)
 * [etc/slurm-resource-monitor.service](#etcslurm-resource-monitorservice)
 * [slurm-monitor-notification.pl](#slurm-monitor-notificationpl)
 * [slurm-resource-monitor.conf](#slurm-resource-monitorconf)
+
+## Installation
+
+To install:
+1. The [slurm-resource-monitor.pl](#slurm-resource-monitorpl) and
+   [slurm-monitor-notification.pl](#slurm-monitor-notificationpl) should be
+   copied somewhere globally, e.g. in `/usr/local/sbin/`.
+
+2. The [slurm-resource-monitor.conf.sample](#slurm-resource-monitorconf) should
+   be copied to the same directory as `slurm.conf` and renamed
+   `slurm-resource-monitor.conf`. It should be edited with the right
+   parameters, and the `NotificationScript` parameter should point to the
+   installation location of `slurm-monitor-notification.pl`
+
+3. Assuming using systemd,
+   [etc/slurm-resource-monitor.service](#etcslurm-resource-monitorservice)
+   should be copied to `/etc/systemd/system/slurm-resource-monitor.service` and
+   activated:
+```
+systemctl daemon-reload
+systemctl enable slurm-resource-monitor
+systemctl start slurm-resource-monitor
+```
 
 ## slurm-resource-monitor.pl
 
@@ -93,13 +117,7 @@ When a job finishes with a `COMPLETED` state, if it uses less than
 
 ## etc/slurm-resource-monitor.service
 
-An example systemd service file that can be used to start the daemon. Needs to
-be copied to `/etc/systemd/system/slurm-resource-monitor.service`, and run:
-```
-systemctl daemon-reload
-systemctl enable slurm-resource-monitor
-systemctl start slurm-resource-monitor
-```
+An example systemd service file that can be used to start the daemon.
 
 ## slurm-monitor-notification.pl
 
