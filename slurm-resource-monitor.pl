@@ -508,7 +508,7 @@ sub clean_old {
                 delete $job->{gpus}{history};
                 $ENV{SLURM_RESOURCE_MONITOR_DATA} = Data::Dumper->Dump([$job], [qw(job)]);
                 my $exit = system($config->{notificationscript});
-                #remove_tree("$job->{runtimedir}");
+                remove_tree("$job->{runtimedir}");
                 exit $exit >> 8;
             }
         }

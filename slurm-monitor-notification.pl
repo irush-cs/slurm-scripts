@@ -115,8 +115,7 @@ Slurm Resource Monitor
     my @attachments;
     foreach my $file (keys %attachments) {
         if (-r $attachments{$file}) {
-            my $email = Email::Stuffer;
-            $email->attach_file($attachments{$file});
+            my $email = Email::Stuffer->attach_file($attachments{$file});
             $email->{parts}->[-1]->header_str_set("Content-ID", "<${file}>");
             push @attachments, $email->{parts}->[-1];
             $body =~ s/__IMAGE_\Q${file}\E__/See attached $file\n/sg;
@@ -143,7 +142,7 @@ Slurm Resource Monitor
     $html_part = Email::MIME->create(parts => [$html_part, @attachments]);
     $html_part->content_type_set("multipart/related");
 
-    $email = Email::MIME->create(
+    my $email = Email::MIME->create(
                                  header_str => [
                                                 'Content-Type' => "multipart/alternative",
                                                 'From' => "Slurm Resource Monitor <slurm\@${domain}>",
