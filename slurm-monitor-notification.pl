@@ -33,6 +33,8 @@ if (not exists $job->{recipients} or not @{$job->{recipients}}) {
     exit 1;
 }
 
+my %attachments;
+
 foreach my $res (qw(cpus gpus)) {
     if ($job->{$res}{notify}) {
         my $badpercent = round(100 * $job->{$res}{baduse} / $job->{$res}{samples});
@@ -49,6 +51,33 @@ foreach my $res (qw(cpus gpus)) {
         $body .= $table->rule("-", "+");
         $body .= $table->body();
         $body .= "\n";
+
+        if ($job->{$res}{notifyhistory} and -r "$job->{runtimedir}/$res") {
+            if (open(GP, ">$job->{runtimedir}/$res.gp")) {
+                print GP "data = \"$job->{runtimedir}/$res\"\n";
+                print GP "set datafile separator \",\"\n";
+                print GP "set xdata time\n";
+                print GP "set ylabel \"$res\"\n";
+                print GP "set ytics 1\n";
+                print GP "set xlabel \"time\"\n";
+                print GP "set timefmt \"\%s\"\n";
+                print GP "set style fill solid\n";
+                print GP "set xrange [$job->{$res}{firststamp}:$job->{$res}{laststamp}]\n";
+                print GP "set yrange [0:$job->{$res}{count}]\n";
+                print GP "set terminal gif size 800,200\n";
+                print GP "set output \"$job->{runtimedir}/$res.gif\"\n";
+                print GP "plot data using 1:2 with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
+                close(GP);
+                if (system("gnuplot $job->{runtimedir}/$res.gp") == 0) {
+                    $attachments{"$res.gif"} = "$job->{runtimedir}/$res.gif";
+                    $body .= "__IMAGE_$res.gif__\n";
+                } else {
+                    print STDERR "Can't run gnuplot: $!\n";
+                }
+            } else {
+                print STDERR "Can't create a gnuplot file: $!\n";
+            }
+        }
     }
 }
 
@@ -57,7 +86,8 @@ if ($job->{shortjobnotify}) {
 }
 
 if ($body) {
-    $body = "Dear $job->{login}
+    my $name = (getpwnam($job->{login}))[6] // $job->{login};
+    $body = "Dear $name,
 
 Your job $job->{jobid} on $job->{node} ($job->{cluster}) was allocated more resources than it needed.
 
@@ -82,20 +112,58 @@ Slurm Resource Monitor
     }
     $replyto = address_of($replyto);
 
-    my $email = Email::Stuffer
-      ->from("Slurm Resource Monitor <slurm\@${domain}>")
-      ->to(@recipients)
-      ->subject("Unused resources for job $job->{jobid} (on $job->{cluster})")
-      ->text_body($body)
-      ->html_body($html_body)
-      ->reply_to("$replyto");
-
-    $email->send();
-
-    if ($job->{recipientsbcc} and @{$job->{recipientsbcc}}) {
-        $email->send({to => [map {address_of($_)} @{$job->{recipientsbcc}}]});
+    my @attachments;
+    foreach my $file (keys %attachments) {
+        if (-r $attachments{$file}) {
+            my $email = Email::Stuffer;
+            $email->attach_file($attachments{$file});
+            $email->{parts}->[-1]->header_str_set("Content-ID", "<${file}>");
+            push @attachments, $email->{parts}->[-1];
+            $body =~ s/__IMAGE_\Q${file}\E__/See attached $file\n/sg;
+            $html_body =~ s,__IMAGE_\Q${file}\E__,<img src="cid:$file" alt="See attached $file"><br>,sg;
+        }
     }
 
+    my $text_part = Email::MIME->create(
+                                        attributes => {
+                                                       content_type => 'text/plain',
+                                                       charset => 'utf-8',
+                                                       encoding     => 'quoted-printable',
+                                                      },
+                                        body => $body);
+
+    my $html_part = Email::MIME->create(
+                                        attributes => {
+                                                       content_type => 'text/html',
+                                                       charset => 'utf-8',
+                                                       encoding => 'quoted-printable',
+                                                      },
+                                        body => $html_body);
+
+    $html_part = Email::MIME->create(parts => [$html_part, @attachments]);
+    $html_part->content_type_set("multipart/related");
+
+    $email = Email::MIME->create(
+                                 header_str => [
+                                                'Content-Type' => "multipart/alternative",
+                                                'From' => "Slurm Resource Monitor <slurm\@${domain}>",
+                                                'To' => [@recipients],
+                                                'Subject' => "Unused resources for job $job->{jobid} (on $job->{cluster})",
+                                                'Reply-To' => "$replyto",
+                                               ],
+                                 parts => [$text_part, $html_part],
+                                );
+
+    #print $email->as_string;
+    unless (Email::Sender::Simple->try_to_send($email)) {
+        print STDERR "Error sending mail\n";
+    }
+
+    if ($job->{recipientsbcc} and @{$job->{recipientsbcc}}) {
+        unless (Email::Sender::Simple->try_to_send($email, {to => [map {address_of($_)} @{$job->{recipientsbcc}}]})) {
+            print STDERR "Error sending bcc mail\n";
+        }
+    }
 }
 
 sub address_of {

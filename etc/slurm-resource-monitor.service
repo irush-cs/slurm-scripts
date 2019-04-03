@@ -8,6 +8,7 @@ Type=simple
 User=nobody
 ExecStart=/usr/local/sbin/slurm-resource-monitor.pl
 SyslogIdentifier=slurm-resource-monitor
+RuntimeDirectory=slurm-resource-monitor
 
 [Install]
 WantedBy=multi-user.target

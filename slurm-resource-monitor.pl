@@ -34,6 +34,7 @@ use Data::Dumper;
 use Getopt::Long;
 use Sys::Hostname;
 use Time::ParseDate;
+use File::Path qw(make_path remove_tree);
 
 $Data::Dumper::Sortkeys = 1;
 
@@ -50,7 +51,10 @@ my $shortjobpercent = 15;
 my $notifyshortjob = 1;
 my %notifyunused = (cpus => 1,
                     gpus => 1);
+my %notifyhistory = (cpus => 1,
+                     gpus => 1);
 my $minmonitoredpercent = 75;
+my $runtimedir = $ENV{RUNTIME_DIRECTORY} // "/run/slurm-resource-monitor";
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -61,6 +65,7 @@ my $minmonitoredpercent = 75;
 #   baduse  - number of samples with "bad" usage (unused > allowedunused{count})
 #   samples - number of samples
 #   count   - number of resources
+#   history - array of histories [stamp, data]
 
 my %stats; 
 
@@ -141,6 +146,10 @@ $verbose = 1 if $debug;
 ################################################################################
 
 my $slurm_config = cshuji::Slurm::get_config();
+unless ($slurm_config) {
+    print STDERR "Can't get slurm config\n";
+    exit 6;
+}
 my $cluster = $slurm_config->{ClusterName};
 unless ($conffile) {
     $conffile = $slurm_config->{SLURM_CONF};
@@ -243,17 +252,24 @@ sub read_conf {
                     print STDERR "Bad configuration: $name is not a integer ($new)\n";
                     exit 13;
                 }
+            } elsif ($type eq "dir") {
+                unless (-d "$new") {
+                    print STDERR "Bad directory: $name is not a directory ($new)\n";
+                    exit 13;
+                }
             } else {
                 print STDERR "Bad configuration type: \"$type\"\n";
                 exit 12;
             }
-            print "Updating $name: $temp -> $$var\n" if $verbose and $temp != $$var;
+            print "Updating $name: $temp -> $$var\n" if $verbose and $temp ne $$var;
         }
     }
 
     _update_setting(\$notifyshortjob, $config->{notifyshortjob}, "bool", "NotifyShortJob");
     _update_setting(\$notifyunused{cpus}, $config->{notifyunusedcpus}, "bool", "NotifyUnusedCPUs");
     _update_setting(\$notifyunused{gpus}, $config->{notifyunusedgpus}, "bool", "NotifyUnusedGPUs");
+    _update_setting(\$notifyhistory{cpus}, $config->{notifycpugraph}, "bool", "NotifyCPUGraph");
+    _update_setting(\$notifyhistory{gpus}, $config->{notifygpugraph}, "bool", "NotifyGPUGraph");
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
@@ -278,6 +294,8 @@ sub read_conf {
     _update_setting(\$minruntime, $config->{minruntime}, "int", "MinRunTime");
 
     _update_setting(\$shortjobpercent, $config->{shortjobpercent}, "percent", "ShortJobPercent");
+
+    _update_setting(\$runtimedir, $config->{runtimedir}, "dir", "RuntimeDir");
 
     # clear stats, parameters might have changed
     %stats = ();
@@ -374,8 +392,11 @@ sub get_new_jobs {
                 $jobstat->{cpus}{notifyunused} = $uconfig->{notifyunusedcpus};
                 $jobstat->{cpus}{allowedunused} = {count => $uconfig->{allowedunusedcpus}, percent => $uconfig->{allowedunusedcpupercent}};
                 $jobstat->{gpus}{allowedunused} = {count => $uconfig->{allowedunusedgpus}, percent => $uconfig->{allowedunusedgpupercent}};
+                $jobstat->{cpus}{history} = [] if $notifyhistory{cpus};
+                $jobstat->{gpus}{history} = [] if $notifyhistory{gpus};
 
                 $jobstat->{firststamp} = $stamp;
+                $jobstat->{runtimedir} = "${runtimedir}/$jobstat->{jobid}/";
 
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
@@ -436,6 +457,22 @@ sub clean_old {
                     if ($job->{$res}{samples} * ($job->{$res}{allowedunused}{percent} / 100) < $job->{$res}{baduse}) {
                         $job->{$res}{notify} = 1;
                         $notify = 1;
+                        if ($notifyhistory{$res} and @{$job->{$res}{history}}) {
+                            make_path("$job->{runtimedir}");
+                            unless (-d $job->{runtimedir}) {
+                                print STDERR "Can't create $job->{runtimedir}\n";
+                                exit 21;
+                            }
+                            unless (open(RUNTIME, ">$job->{runtimedir}/$res")) {
+                                print STDERR "Can't save $res history: $!\n";
+                                exit 22;
+                            }
+                            foreach my $h (@{$job->{$res}{history}}) {
+                                print RUNTIME "$h->[0],$h->[1]\n";
+                            }
+                            close(RUNTIME);
+                            $job->{$res}{notifyhistory} = 1;
+                        }
                     }
                 }
             }
@@ -466,10 +503,13 @@ sub clean_old {
             }
             unless ($pid) {
                 # child
-                exit 1;
+                local $SIG{CHLD} = 'DEFAULT';
+                delete $job->{cpus}{history};
+                delete $job->{gpus}{history};
                 $ENV{SLURM_RESOURCE_MONITOR_DATA} = Data::Dumper->Dump([$job], [qw(job)]);
-                exec($config->{notificationscript});
-                exit 1;
+                my $exit = system($config->{notificationscript});
+                #remove_tree("$job->{runtimedir}");
+                exit $exit >> 8;
             }
         }
         print "Removing job $job->{jobid}".($notify ? " (notified)" : "")."\n";
@@ -483,7 +523,11 @@ sub gpu_utilization {
 
     # get the load
     my $stamp = time;
+
+    local $SIG{CHLD} = 'DEFAULT';
     my @load = `nvidia-smi --query-gpu=utilization.gpu --format=csv,nounits,noheader`;
+    $SIG{CHLD} = \&sigCHLD;
+
     if ($!) {
         print STDERR "Can't get gpu information\n";
         exit 5;
@@ -504,6 +548,9 @@ sub gpu_utilization {
         }
         $job->{gpus}{usage}{$good}++;
         $job->{gpus}{samples}++;
+        if ($notifyhistory{gpus}) {
+            push @{$job->{gpus}{history}}, [$stamp, $good];
+        }
     }
 }
 
@@ -572,6 +619,9 @@ sub cpu_utilization {
             $job->{cpus}{lastload} = $totalusage;
             $job->{cpus}{usage}{$good}++;
             $job->{cpus}{samples}++;
+            if ($notifyhistory{cpus}) {
+                push @{$job->{cpus}{history}}, [$stamp, $good];
+            }
         }
         foreach my $cpu (keys %{$job->{cpus}{data}}) {
             $job->{cpus}{data}{$cpu}{lastread} = $utilization[$cpu];

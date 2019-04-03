@@ -95,6 +95,10 @@ And the usage histogram is
 A "good" usage is 4 or 5 CPUs, which was 20% of the time. "bad" usage is
 between 0 and 3 CPUs, which is 80%. A notification will be sent as 80 > 30.
 
+If `NotifyCPUGraph` is true, all the samples will be saved and reported back in
+the mail via an attached image plotted using gnuplot (so gnuplot needs to be
+installed).
+
 ### GPU
 
 The GPU utilization checks is very similar to the CPU checks. From the slurm's
@@ -109,6 +113,8 @@ and `AllowedUnusedGPUs`. And a notification is sent depending on
 Unlike CPUs, the `nvidia-smi` utility reports the current usage of the GPU
 instead of the usage in the past time interval. So for sparse GPU usages with
 long sampling intervals, the report might be inaccurate.
+
+Like CPUs, a usage graph can be obtained with `NotifyGPUGraph`.
 
 ### Timelimit
 
@@ -221,3 +227,15 @@ give inaccurate results.
 
 The minimum number of samples for reporting. This will be apply separately for
 the CPU and GPU sampling.
+
+### RuntimeDir
+
+Runtime directory where some data files will be saved for the notification
+script. Should be created before the daemon start. Defaults to the
+RUNTIME_DIRECTORY environment variable
+
+### NotifyCPUGraph, NotifyGPUGraph
+
+Whether to save the entire sampling data of the CPU or GPU usage or just the
+histogram. Depending on the `SamplingInterval`, this will have some effects on
+the node's memory usage.

@@ -402,6 +402,8 @@ sub get_jobs {
 
     my %args = @_;
     my $jobs;
+
+    local $SIG{CHLD} = 'DEFAULT';
     if ($args{_scontrol_output}) {
         $jobs = parse_scontrol_show($args{_scontrol_output});
     } else {
@@ -567,6 +569,8 @@ sub get_config {
     my $errors = $args{errors};
     my $config = {};
     my @lines;
+    local $SIG{CHLD} = 'DEFAULT';
+
     if ($args{_scontrol_output}) {
         @lines = @{$args{_scontrol_output}};
     } else {

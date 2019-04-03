@@ -75,3 +75,17 @@ SamplingInterval=60
 # Minimum number of samples for reporting.
 #
 MinSamples=10
+
+#
+# Runtime directory where some data files will be saved for the notification
+# script. Should be created before the daemon start. Defaults to
+# the RUNTIME_DIRECTORY environment variable
+#
+RuntimeDir=/run/slurm-resource-monitor
+
+#
+# Whether to keep and report entire CPU or GPU load sampling data or just the
+# usage historgram.
+#
+NotifyCPUGraph=Yes
+NotifyGPUGraph=Yes
