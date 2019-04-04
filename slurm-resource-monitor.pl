@@ -418,7 +418,7 @@ sub get_new_jobs {
 
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
-                    print "New job $jobstat->{jobid}: cpus: $jobstat->{cpus}{count}, gpus: $jobstat->{gpus}{count}, memory: $jobstat->{mem}{count}, state: $job->{JobState}\n";
+                    print "New job $jobstat->{jobid}: cpus: $jobstat->{cpus}{count}, gpus: $jobstat->{gpus}{count}, memory: $jobstat->{memory}{count}, state: $job->{JobState}\n";
                 }
             }
             $stats{$job->{JobId}}{state} = $job->{JobState};
