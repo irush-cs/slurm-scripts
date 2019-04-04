@@ -2,7 +2,7 @@
 
 The slurm-resource-monitor is a stand-alone daemon that monitors the resources
 used by slurm jobs and reports back to the users if they've requested too much
-resources. Currently monitored are: CPU, GPU, and time limit.
+resources. Currently monitored are: CPU, GPU, memory and time limit.
 
 # Table of Contents
 
@@ -116,6 +116,20 @@ long sampling intervals, the report might be inaccurate.
 
 Like CPUs, a usage graph can be obtained with `NotifyGPUGraph`.
 
+### Memory
+
+Like with the CPU utilization this uses cgroup, so slurm should be configured
+to use the `proctrack/cgroup`, and the daemon needs read access to the memory
+cgroup of the jobs. I.e. to
+```
+/sys/fs/cgroup/memory/slurm/uid_<uid>/job-<jobid>/memory.usage_in_bytes
+/sys/fs/cgroup/memory/slurm/uid_<uid>/job-<jobid>/memory.max_usage_in_bytes
+```
+
+A notification will be sent if the unused memory is more than
+`AllowedUnusedMemoryPercent`. A usage graph will be created if
+`NotifyMemoryGraph` is true.
+
 ### Timelimit
 
 When a job finishes with a `COMPLETED` state, if it uses less than
@@ -185,15 +199,10 @@ which was allocated, a notification will be sent.
 Whether to notify on short jobs or not (boolean value). This can be set per
 user in `~/.slurm-resource-monitor`.
 
-### NotifyUnusedCPUs
+### NotifyUnusedCPUs, NotifyUnusedGPUs, NotifyUnusedMemory
 
-Whether to notify on low CPU usage or not (boolean value). This can be set per
-user in `~/.slurm-resource-monitor`.
-
-### NotifyUnusedGPUs
-
-Whether to notify on low GPU usage or not (boolean value). This can be set per
-user in `~/.slurm-resource-monitor`.
+Whether to notify on low CPU, GPU or memory usage or not (boolean value). This
+can be set per user in `~/.slurm-resource-monitor`.
 
 ### InUseCPUPercent, InUseGPUPercent
 
@@ -205,7 +214,7 @@ resource "in-use".
 Number of CPUs or GPUs to allow to be unused. These can be set per user in
 `~/.slurm-resource-monitor`.
 
-### AllowedUnusedCPUPercent, AllowedUnusedGPUPercent
+### AllowedUnusedCPUPercent, AllowedUnusedGPUPercent, AllowedUnusedMemoryPercent
 
 If the percentage of sampling that didn't use more than that allowed unused
 resource is higher than the AllowedUnusedCPUPercent (or
@@ -234,8 +243,8 @@ Runtime directory where some data files will be saved for the notification
 script. Should be created before the daemon start. Defaults to the
 RUNTIME_DIRECTORY environment variable
 
-### NotifyCPUGraph, NotifyGPUGraph
+### NotifyCPUGraph, NotifyGPUGraph, NotifyMemoryGraph
 
-Whether to save the entire sampling data of the CPU or GPU usage or just the
-histogram. Depending on the `SamplingInterval`, this will have some effects on
-the node's memory usage.
+Whether to save the entire sampling data of the CPU, GPU or memory usage or
+just the histogram. Depending on the `SamplingInterval`, this will have some
+effects on the node's memory usage.

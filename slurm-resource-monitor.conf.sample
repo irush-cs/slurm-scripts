@@ -42,6 +42,7 @@ ShortJobPercent=15
 NotifyShortJob=Yes
 NotifyUnusedCPUs=Yes
 NotifyUnusedGPUs=Yes
+NotifyUnusedMemory=Yes
 
 #
 # The percentile of cpu or gpu load to be considered in-use.
@@ -60,6 +61,7 @@ AllowedUnusedGPUs=1
 #
 AllowedUnusedCPUPercent=75
 AllowedUnusedGPUPercent=25
+AllowedUnusedMemoryPercent=25
 
 #
 # The minimum percent of the job's total runtime which it needs to be monitored
@@ -89,3 +91,4 @@ RuntimeDir=/run/slurm-resource-monitor
 #
 NotifyCPUGraph=Yes
 NotifyGPUGraph=Yes
+NotifyMemoryGraph=Yes

@@ -50,9 +50,13 @@ my $minruntime = 60 * 30;
 my $shortjobpercent = 15;
 my $notifyshortjob = 1;
 my %notifyunused = (cpus => 1,
-                    gpus => 1);
+                    gpus => 1,
+                    memory => 1,
+                   );
 my %notifyhistory = (cpus => 1,
-                     gpus => 1);
+                     gpus => 1,
+                     memory => 1,
+                    );
 my $minmonitoredpercent = 75;
 my $runtimedir = $ENV{RUNTIME_DIRECTORY} // "/run/slurm-resource-monitor";
 
@@ -82,7 +86,9 @@ my $minsamples = 10;
 my %allowedunused = (cpus => {count => 2,
                               percent => 75},
                      gpus => {count => 1,
-                              percent => 25});
+                              percent => 25},
+                     memory => {percent => 25},
+                    );
 
 # states:
 #   report  => send mail,
@@ -268,8 +274,10 @@ sub read_conf {
     _update_setting(\$notifyshortjob, $config->{notifyshortjob}, "bool", "NotifyShortJob");
     _update_setting(\$notifyunused{cpus}, $config->{notifyunusedcpus}, "bool", "NotifyUnusedCPUs");
     _update_setting(\$notifyunused{gpus}, $config->{notifyunusedgpus}, "bool", "NotifyUnusedGPUs");
+    _update_setting(\$notifyunused{memory}, $config->{notifyunusedmemory}, "bool", "NotifyUnusedMemory");
     _update_setting(\$notifyhistory{cpus}, $config->{notifycpugraph}, "bool", "NotifyCPUGraph");
     _update_setting(\$notifyhistory{gpus}, $config->{notifygpugraph}, "bool", "NotifyGPUGraph");
+    _update_setting(\$notifyhistory{memory}, $config->{notifymemorygraph}, "bool", "NotifyMemoryGraph");
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
@@ -278,6 +286,7 @@ sub read_conf {
     _update_setting(\$allowedunused{cpus}{percent}, $config->{allowedunusedcpupercent}, "percent", "AllowedUnusedCPUPercent");
     _update_setting(\$allowedunused{gpus}{count}, $config->{allowedunusedgpus}, "int", "AllowedUnusedGPUs");
     _update_setting(\$allowedunused{gpus}{percent}, $config->{allowedunusedgpupercent}, "percent", "AllowedUnusedGPUPercent");
+    _update_setting(\$allowedunused{memory}{percent}, $config->{allowedunusedmemorypercent}, "percent", "AllowedUnusedMemoryPercent");
 
     _update_setting(\$minmonitoredpercent, $config->{minmonitoredpercent}, "percent", "MinMonitoredPercent");
 
@@ -317,6 +326,7 @@ while (1) {
     get_new_jobs();
     clean_old();
     gpu_utilization() if $havegpus;
+    memory_utilization();
     cpu_utilization();
 
     foreach my $job (values %stats) {
@@ -352,10 +362,12 @@ sub get_new_jobs {
 
                 my $cpus = [];
                 my $gpus = [];
+                my $mem = 0;
                 foreach my $detail (@{$job->{_DETAILS}}) {
                     next if (none {$hostname eq $_} @{$detail->{_NodeList}});
                     push @$cpus, @{$detail->{_CPUs}};
                     push @$gpus, @{$detail->{_GRESs}{gpu} // []};
+                    $mem += $detail->{Mem};
                 }
                 $gpus = {map {$_ => {}} @$gpus};
                 $cpus = {map {$_ => {}} @$cpus};
@@ -363,8 +375,9 @@ sub get_new_jobs {
                 my $jobstat = {jobid => $job->{JobId},
                                uid => $job->{UserId} =~ m/\((.*)\)/,
                                login => $job->{UserId} =~ m/^([^(]*)\(/,
-                               cpus => {                  samples => 0, count => scalar(keys %$cpus), gooduse => 0, baduse => 0},
-                               gpus => {data => {%$gpus}, samples => 0, count => scalar(keys %$gpus), gooduse => 0, baduse => 0}
+                               cpus   => {                  samples => 0, count => scalar(keys %$cpus), gooduse => 0, baduse => 0},
+                               gpus   => {data => {%$gpus}, samples => 0, count => scalar(keys %$gpus), gooduse => 0, baduse => 0},
+                               memory => {                  samples => 0, count => $mem},
                               };
                 $jobstat->{gpus}{usage} = {map {$_ => 0} (0 .. scalar(keys %$gpus))};
                 $jobstat->{cpus}{usage} = {map {$_ => 0} (0 .. scalar(keys %$cpus))};
@@ -382,25 +395,30 @@ sub get_new_jobs {
                 $uconfig->{notifyshortjob} = to_bool($uconfig->{notifyshortjob}, $notifyshortjob);
                 $uconfig->{notifyunusedgpus} = to_bool($uconfig->{notifyunusedgpus}, $notifyunused{gpus});
                 $uconfig->{notifyunusedcpus} = to_bool($uconfig->{notifyunusedcpus}, $notifyunused{cpus});
+                $uconfig->{notifyunusedmemory} = to_bool($uconfig->{notifyunusedmemory}, $notifyunused{memory});
                 $uconfig->{allowedunusedcpus} = to_int($uconfig->{allowedunusedcpus}, $allowedunused{cpus}{count});
                 $uconfig->{allowedunusedgpus} = to_int($uconfig->{allowedunusedgpus}, $allowedunused{gpus}{count});
                 $uconfig->{allowedunusedcpupercent} = to_percent($uconfig->{allowedunusedcpupercent}, $allowedunused{cpus}{percent});
                 $uconfig->{allowedunusedgpupercent} = to_percent($uconfig->{allowedunusedgpupercent}, $allowedunused{gpus}{percent});
+                $uconfig->{allowedunusedmemorypercent} = to_percent($uconfig->{allowedunusedmemorypercent}, $allowedunused{memory}{percent});
 
                 $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
                 $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
                 $jobstat->{cpus}{notifyunused} = $uconfig->{notifyunusedcpus};
+                $jobstat->{memory}{notifyunused} = $uconfig->{notifyunusedmemory};
                 $jobstat->{cpus}{allowedunused} = {count => $uconfig->{allowedunusedcpus}, percent => $uconfig->{allowedunusedcpupercent}};
                 $jobstat->{gpus}{allowedunused} = {count => $uconfig->{allowedunusedgpus}, percent => $uconfig->{allowedunusedgpupercent}};
+                $jobstat->{memory}{allowedunused} = {percent => $uconfig->{allowedunusedmemorypercent}};
                 $jobstat->{cpus}{history} = [] if $notifyhistory{cpus};
                 $jobstat->{gpus}{history} = [] if $notifyhistory{gpus};
+                $jobstat->{memory}{history} = [] if $notifyhistory{memory};
 
                 $jobstat->{firststamp} = $stamp;
                 $jobstat->{runtimedir} = "${runtimedir}/$jobstat->{jobid}/";
 
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
-                    print "New job $jobstat->{jobid}: cpus: $jobstat->{cpus}{count}, gpus: $jobstat->{gpus}{count}, state: $job->{JobState}\n";
+                    print "New job $jobstat->{jobid}: cpus: $jobstat->{cpus}{count}, gpus: $jobstat->{gpus}{count}, memory: $jobstat->{mem}{count}, state: $job->{JobState}\n";
                 }
             }
             $stats{$job->{JobId}}{state} = $job->{JobState};
@@ -478,13 +496,36 @@ sub clean_old {
             }
 
             my $runtimepercent = (100 * ($runtime / $timelimit));
-            if ($job->{state} eq "COMPLETED" and
+            if ($job->{state} and $job->{state} eq "COMPLETED" and
                 $runtimepercent < $shortjobpercent and
                 $job->{notifyshortjob}) {
                 $notify = 1;
                 $job->{runtimepercent} = round($runtimepercent);
                 $job->{shortjobpercent} = $shortjobpercent;
                 $job->{shortjobnotify} = 1;
+            }
+
+            if ($job->{memory}{notifyunused} and $job->{memory}{samples} and $job->{memory}{samples} >= $minsamples) {
+                if ($job->{memory}{count} * ((100 - $job->{memory}{allowedunused}{percent}) / 100) > $job->{memory}{max_usage}) {
+                    $job->{memory}{notify} = 1;
+                    $notify = 1;
+                    if ($notifyhistory{memory} and @{$job->{memory}{history}}) {
+                        make_path("$job->{runtimedir}");
+                        unless (-d $job->{runtimedir}) {
+                            print STDERR "Can't create $job->{runtimedir}\n";
+                            exit 21;
+                        }
+                        unless (open(RUNTIME, ">$job->{runtimedir}/memory")) {
+                            print STDERR "Can't save memory history: $!\n";
+                            exit 22;
+                        }
+                        foreach my $h (@{$job->{memory}{history}}) {
+                            print RUNTIME "$h->[0],$h->[1]\n";
+                        }
+                        close(RUNTIME);
+                        $job->{memory}{notifyhistory} = 1;
+                    }
+                }
             }
         }
         print "old job: ".Dumper($job) if $debug;
@@ -508,7 +549,7 @@ sub clean_old {
                 delete $job->{gpus}{history};
                 $ENV{SLURM_RESOURCE_MONITOR_DATA} = Data::Dumper->Dump([$job], [qw(job)]);
                 my $exit = system($config->{notificationscript});
-                remove_tree("$job->{runtimedir}");
+                remove_tree("$job->{runtimedir}") unless $debug;
                 exit $exit >> 8;
             }
         }
@@ -555,7 +596,7 @@ sub gpu_utilization {
 }
 
 ################################################################################
-# cpu_load
+# cpu_utilization
 ################################################################################
 sub cpu_utilization {
     foreach my $job (values %stats) {
@@ -627,5 +668,49 @@ sub cpu_utilization {
             $job->{cpus}{data}{$cpu}{lastread} = $utilization[$cpu];
         }
         $job->{cpus}{laststamp} = $stamp;
+    }
+}
+
+
+################################################################################
+# memory_utilization
+################################################################################
+sub memory_utilization {
+    foreach my $job (values %stats) {
+        next unless $states{sample}{$job->{state}};
+
+        # get the utilization
+        my $usage;
+        my $max_usage;
+        my $stamp = time;
+        if ($notifyhistory{memory}) {
+            if (open(USAGE, "</sys/fs/cgroup/memory/slurm/uid_$job->{uid}/job_$job->{jobid}/memory.usage_in_bytes")) {
+                $usage = <USAGE>;
+                close(USAGE);
+                chomp($usage);
+            } else {
+                print STDERR "Can't get memory.usage_in_bytes from memory cgroup for job $job->{jobid}\n";
+                next;
+            }
+            $usage = round($usage / (1024 * 1024));
+        }
+        if (open(USAGE, "</sys/fs/cgroup/memory/slurm/uid_$job->{uid}/job_$job->{jobid}/memory.max_usage_in_bytes")) {
+            $max_usage = <USAGE>;
+            close(USAGE);
+            chomp($max_usage);
+        } else {
+            print STDERR "Can't get memory.max_usage_in_bytes from memory cgroup for job $job->{jobid}\n";
+            next;
+        }
+        $max_usage = round($max_usage / (1024 * 1024));
+        $job->{memory}{firststamp} = $stamp unless exists $job->{memory}{firststamp};
+        $job->{memory}{laststamp} = $stamp;
+
+        # calculate and save the load
+        $job->{memory}{samples}++;
+        $job->{memory}{max_usage} = $max_usage;
+        if ($notifyhistory{memory}) {
+            push @{$job->{memory}{history}}, [$stamp, $usage];
+        }
     }
 }

@@ -35,6 +35,47 @@ if (not exists $job->{recipients} or not @{$job->{recipients}}) {
 
 my %attachments;
 
+sub plot {
+    my $job = shift;
+    my $res = shift;
+
+    my $ytics = 1;
+    if ($job->{$res}{count} > 10)  {
+        $ytics = $job->{$res}{count} / 6;
+    }
+    if ($job->{$res}{notifyhistory} and -r "$job->{runtimedir}/$res") {
+        if (open(GP, ">$job->{runtimedir}/$res.gp")) {
+            print GP "#!/usr/bin/env gnuplot\n";
+            print GP "\n";
+            print GP "data = \"$job->{runtimedir}/$res\"\n";
+            print GP "unset key\n";
+            print GP "set datafile separator \",\"\n";
+            print GP "set xdata time\n";
+            print GP "set ylabel \"$res\"\n";
+            print GP "set ytics $ytics\n";
+            print GP "set format y \"\%.f\"\n";
+            print GP "set xlabel \"time\"\n";
+            print GP "set timefmt \"\%s\"\n";
+            print GP "set style fill solid\n";
+            print GP "set xrange [$job->{$res}{firststamp}:$job->{$res}{laststamp}]\n";
+            print GP "set yrange [0:$job->{$res}{count}]\n";
+            print GP "set terminal gif size 800,200\n";
+            print GP "set output \"$job->{runtimedir}/$res.gif\"\n";
+            print GP "plot data using 1:2 with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
+            close(GP);
+            chmod 0755, "$job->{runtimedir}/$res.gp";
+            if (system("gnuplot $job->{runtimedir}/$res.gp") == 0) {
+                $attachments{"$res.gif"} = "$job->{runtimedir}/$res.gif";
+                $body .= "__IMAGE_$res.gif__\n";
+            } else {
+                print STDERR "Can't run gnuplot: $!\n";
+            }
+        } else {
+            print STDERR "Can't create a gnuplot file: $!\n";
+        }
+    }
+}
+
 foreach my $res (qw(cpus gpus)) {
     if ($job->{$res}{notify}) {
         my $badpercent = round(100 * $job->{$res}{baduse} / $job->{$res}{samples});
@@ -52,33 +93,15 @@ foreach my $res (qw(cpus gpus)) {
         $body .= $table->body();
         $body .= "\n";
 
-        if ($job->{$res}{notifyhistory} and -r "$job->{runtimedir}/$res") {
-            if (open(GP, ">$job->{runtimedir}/$res.gp")) {
-                print GP "data = \"$job->{runtimedir}/$res\"\n";
-                print GP "set datafile separator \",\"\n";
-                print GP "set xdata time\n";
-                print GP "set ylabel \"$res\"\n";
-                print GP "set ytics 1\n";
-                print GP "set xlabel \"time\"\n";
-                print GP "set timefmt \"\%s\"\n";
-                print GP "set style fill solid\n";
-                print GP "set xrange [$job->{$res}{firststamp}:$job->{$res}{laststamp}]\n";
-                print GP "set yrange [0:$job->{$res}{count}]\n";
-                print GP "set terminal gif size 800,200\n";
-                print GP "set output \"$job->{runtimedir}/$res.gif\"\n";
-                print GP "plot data using 1:2 with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
-                close(GP);
-                if (system("gnuplot $job->{runtimedir}/$res.gp") == 0) {
-                    $attachments{"$res.gif"} = "$job->{runtimedir}/$res.gif";
-                    $body .= "__IMAGE_$res.gif__\n";
-                } else {
-                    print STDERR "Can't run gnuplot: $!\n";
-                }
-            } else {
-                print STDERR "Can't create a gnuplot file: $!\n";
-            }
-        }
+        plot($job, $res);
     }
+}
+
+if ($job->{memory}{notify}) {
+    my $badpercent = round(100 * $job->{memory}{max_usage} / $job->{memory}{count});
+    $body .= "You have requested $job->{memory}{count} MB RAM, but your max usage was only $job->{memory}{max_usage} MB (${badpercent}\%)\n";
+    $body .= "\n";
+    plot($job, "memory");
 }
 
 if ($job->{shortjobnotify}) {
