@@ -17,6 +17,7 @@ use Email::Stuffer;
 use Net::Domain qw(hostdomain);
 use Text::Table;
 use POSIX qw(round);
+use Time::Local;
 
 my $domain = hostdomain;
 
@@ -35,6 +36,9 @@ if (not exists $job->{recipients} or not @{$job->{recipients}}) {
 
 my %attachments;
 
+my @time = localtime(time);
+my $tzoffset = timegm(@time) - timelocal(@time);
+
 sub plot {
     my $job = shift;
     my $res = shift;
@@ -50,18 +54,21 @@ sub plot {
             print GP "data = \"$job->{runtimedir}/$res\"\n";
             print GP "unset key\n";
             print GP "set datafile separator \",\"\n";
-            print GP "set xdata time\n";
-            print GP "set ylabel \"$res\"\n";
-            print GP "set ytics $ytics\n";
-            print GP "set format y \"\%.f\"\n";
-            print GP "set xlabel \"time\"\n";
-            print GP "set timefmt \"\%s\"\n";
             print GP "set style fill solid\n";
-            print GP "set xrange [$job->{$res}{firststamp}:$job->{$res}{laststamp}]\n";
-            print GP "set yrange [0:$job->{$res}{count}]\n";
             print GP "set terminal gif size 800,200\n";
             print GP "set output \"$job->{runtimedir}/$res.gif\"\n";
-            print GP "plot data using 1:2 with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
+
+            print GP "set xdata time\n";
+            print GP "set xlabel \"time\"\n";
+            print GP "set xrange [($job->{$res}{firststamp} + $tzoffset):($job->{$res}{laststamp} + $tzoffset)]\n";
+
+            print GP "set ylabel \"$res\"\n";
+            print GP "set ytics $ytics\n";
+            print GP "set yrange [0:$job->{$res}{count}]\n";
+            print GP "set format y \"\%.f\"\n";
+            print GP "set timefmt \"\%s\"\n";
+
+            print GP "plot data using (\$1 + $tzoffset):(\$2) with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
             close(GP);
             chmod 0755, "$job->{runtimedir}/$res.gp";
             if (system("gnuplot $job->{runtimedir}/$res.gp") == 0) {
