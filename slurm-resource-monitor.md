@@ -248,3 +248,10 @@ RUNTIME_DIRECTORY environment variable
 Whether to save the entire sampling data of the CPU, GPU or memory usage or
 just the histogram. Depending on the `SamplingInterval`, this will have some
 effects on the node's memory usage.
+
+### NotifyInteractive
+
+Whether to notify on interactive jobs as well. Interactive jobs are less likely
+to use all resources, but might be limited elsewhere.
+
+This can be configured per user in ~/.slurm-resource-monitor.

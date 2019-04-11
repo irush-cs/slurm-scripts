@@ -92,3 +92,10 @@ RuntimeDir=/run/slurm-resource-monitor
 NotifyCPUGraph=Yes
 NotifyGPUGraph=Yes
 NotifyMemoryGraph=Yes
+
+#
+# Whether to notify on interactive jobs as well. Interactive jobs are less
+# likely to use all resources, but might be limited elsewhere. This can be
+# configured per user in ~/.slurm-resource-monitor.
+#
+NotifyInteractive=No

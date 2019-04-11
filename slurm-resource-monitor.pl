@@ -59,6 +59,7 @@ my %notifyhistory = (cpus => 1,
                     );
 my $minmonitoredpercent = 75;
 my $runtimedir = $ENV{RUNTIME_DIRECTORY} // "/run/slurm-resource-monitor";
+my $notifyinteractive = 0;
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -279,6 +280,7 @@ sub read_conf {
     _update_setting(\$notifyhistory{cpus}, $config->{notifycpugraph}, "bool", "NotifyCPUGraph");
     _update_setting(\$notifyhistory{gpus}, $config->{notifygpugraph}, "bool", "NotifyGPUGraph");
     _update_setting(\$notifyhistory{memory}, $config->{notifymemorygraph}, "bool", "NotifyMemoryGraph");
+    _update_setting(\$notifyinteractive, $config->{notifyinteractive}, "bool", "NotifyInteractive");
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
@@ -397,6 +399,7 @@ sub get_new_jobs {
                 $uconfig->{notifyunusedgpus} = to_bool($uconfig->{notifyunusedgpus}, $notifyunused{gpus});
                 $uconfig->{notifyunusedcpus} = to_bool($uconfig->{notifyunusedcpus}, $notifyunused{cpus});
                 $uconfig->{notifyunusedmemory} = to_bool($uconfig->{notifyunusedmemory}, $notifyunused{memory});
+                $uconfig->{notifyinteractive} = to_bool($uconfig->{notifyinteractive}, $notifyinteractive);
                 $uconfig->{allowedunusedcpus} = to_int($uconfig->{allowedunusedcpus}, $allowedunused{cpus}{count});
                 $uconfig->{allowedunusedgpus} = to_int($uconfig->{allowedunusedgpus}, $allowedunused{gpus}{count});
                 $uconfig->{allowedunusedcpupercent} = to_percent($uconfig->{allowedunusedcpupercent}, $allowedunused{cpus}{percent});
@@ -416,6 +419,9 @@ sub get_new_jobs {
 
                 $jobstat->{firststamp} = $stamp;
                 $jobstat->{runtimedir} = "${runtimedir}/$jobstat->{jobid}/";
+
+                $jobstat->{batch} = $job->{BatchFlag};
+                $jobstat->{notifyinteractive} = $uconfig->{notifyinteractive};
 
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
@@ -478,7 +484,8 @@ sub clean_old {
         my $timelimit = cshuji::Slurm::time2sec($job->{timelimit});
         if ($runtime >= $minruntime and
             $job->{laststamp} - $job->{firststamp} >= $minruntime and
-            (100 * ($job->{laststamp} - $job->{firststamp}) / $runtime) >= $minmonitoredpercent
+            (100 * ($job->{laststamp} - $job->{firststamp}) / $runtime) >= $minmonitoredpercent and
+            ($job->{batch} or $job->{notifyinteractive})
            ) {
             foreach my $res ("cpus", "gpus") {
                 $job->{$res}{baduse} = 0;
