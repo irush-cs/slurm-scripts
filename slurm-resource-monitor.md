@@ -255,3 +255,9 @@ Whether to notify on interactive jobs as well. Interactive jobs are less likely
 to use all resources, but might be limited elsewhere.
 
 This can be configured per user in ~/.slurm-resource-monitor.
+
+### MaxArrayTaskId
+
+On array jobs, tasks above this will not be notified.
+
+This can be configured per user in ~/.slurm-resource-monitor.

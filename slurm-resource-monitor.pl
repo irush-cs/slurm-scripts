@@ -60,6 +60,7 @@ my %notifyhistory = (cpus => 1,
 my $minmonitoredpercent = 75;
 my $runtimedir = $ENV{RUNTIME_DIRECTORY} // "/run/slurm-resource-monitor";
 my $notifyinteractive = 0;
+my $maxarraytaskid = 10;
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -281,6 +282,7 @@ sub read_conf {
     _update_setting(\$notifyhistory{gpus}, $config->{notifygpugraph}, "bool", "NotifyGPUGraph");
     _update_setting(\$notifyhistory{memory}, $config->{notifymemorygraph}, "bool", "NotifyMemoryGraph");
     _update_setting(\$notifyinteractive, $config->{notifyinteractive}, "bool", "NotifyInteractive");
+    _update_setting(\$maxarraytaskid, $config->{maxarraytaskid}, "int", "MaxArrayTaskId");
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
@@ -405,6 +407,7 @@ sub get_new_jobs {
                 $uconfig->{allowedunusedcpupercent} = to_percent($uconfig->{allowedunusedcpupercent}, $allowedunused{cpus}{percent});
                 $uconfig->{allowedunusedgpupercent} = to_percent($uconfig->{allowedunusedgpupercent}, $allowedunused{gpus}{percent});
                 $uconfig->{allowedunusedmemorypercent} = to_percent($uconfig->{allowedunusedmemorypercent}, $allowedunused{memory}{percent});
+                $uconfig->{maxarraytaskid} = to_int($uconfig->{maxarraytaskid}, $maxarraytaskid);
 
                 $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
                 $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
@@ -421,7 +424,9 @@ sub get_new_jobs {
                 $jobstat->{runtimedir} = "${runtimedir}/$jobstat->{jobid}/";
 
                 $jobstat->{batch} = $job->{BatchFlag};
+                $jobstat->{arraytaskid} = $job->{ArrayTaskId};
                 $jobstat->{notifyinteractive} = $uconfig->{notifyinteractive};
+                $jobstat->{maxarraytaskid} = $uconfig->{maxarraytaskid};
 
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
@@ -482,10 +487,11 @@ sub clean_old {
         $job->{node} = $hostname;
         my $runtime = cshuji::Slurm::time2sec($job->{runtime});
         my $timelimit = cshuji::Slurm::time2sec($job->{timelimit});
-        if ($runtime >= $minruntime and
-            $job->{laststamp} - $job->{firststamp} >= $minruntime and
-            (100 * ($job->{laststamp} - $job->{firststamp}) / $runtime) >= $minmonitoredpercent and
-            ($job->{batch} or $job->{notifyinteractive})
+        if ($runtime >= $minruntime
+            and $job->{laststamp} - $job->{firststamp} >= $minruntime
+            and (100 * ($job->{laststamp} - $job->{firststamp}) / $runtime) >= $minmonitoredpercent
+            and ($job->{batch} or $job->{notifyinteractive})
+            and (not defined $job->{arraytaskid} or $job->{arraytaskid} <= $job->{maxarraytaskid})
            ) {
             foreach my $res ("cpus", "gpus") {
                 $job->{$res}{baduse} = 0;
@@ -673,7 +679,7 @@ sub cpu_utilization {
 
         # calculate and save the load
         my $totalusage = 0;
-        if ($job->{cpus}{laststamp}) {
+        if ($job->{cpus}{laststamp} and $job->{cpus}{laststamp} != $stamp) {
             my $good = 0;
             foreach my $cpu (keys %{$job->{cpus}{data}}) {
                 my $load = ($utilization[$cpu] - $job->{cpus}{data}{$cpu}{lastread});

@@ -99,3 +99,10 @@ NotifyMemoryGraph=Yes
 # configured per user in ~/.slurm-resource-monitor.
 #
 NotifyInteractive=No
+
+
+#
+# On array jobs, tasks above this will not be notified. This can be configured
+# per user in ~/.slurm-resource-monitor.
+#
+MaxArrayTaskId=10
