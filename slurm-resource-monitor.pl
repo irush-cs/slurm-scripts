@@ -105,6 +105,7 @@ my %states = (report => {"COMPLETED" => 1,
               ignore => {"COMPLETING" => 1,
                          "CANCELLED" => 1,
                          "CONFIGURING" => 1,
+                         "PREEMPTED" => 1,
                         },
               all => {},
              );
@@ -357,7 +358,7 @@ sub get_new_jobs {
             if (exists $oldjobs{$job->{JobId}}) {
                 $stats{$job->{JobId}} //= {jobid => $job->{JobId}};
 
-             # intizalize structure for new jobs
+            # intizalize structure for new jobs
             } elsif (not exists $stats{$job->{JobId}}) {
 
                 my $cpus = [];
@@ -425,6 +426,9 @@ sub get_new_jobs {
             $stats{$job->{JobId}}{runtime} = $job->{RunTime};
             $stats{$job->{JobId}}{timelimit} = $job->{TimeLimit};
             $stats{$job->{JobId}}{laststamp} = $stamp;
+            $stats{$job->{JobId}}{starttime} = $job->{StartTime};
+            $stats{$job->{JobId}}{endtime} = $job->{EndTime};
+            $stats{$job->{JobId}}{submittime} = $job->{SubmitTime};
         }
     }
 
@@ -439,6 +443,21 @@ sub get_new_jobs {
     # delete missing old jobs
     foreach my $old (keys %oldjobs) {
         delete $oldjobs{$old} unless exists $stats{$old};
+    }
+
+    # delete requeued jobs (this will drop first sample, but who cares...)
+    my @todelete;
+    foreach my $job (keys %stats) {
+        my $start = parsedate($stats{$job}{starttime});
+        my $first = $stats{$job}{firststamp};
+        if ($start and $first and $first < $start) {
+            push @todelete, $job;
+        }
+    }
+    if (@todelete) {
+        delete @stats{@todelete};
+        delete @oldjobs{@todelete};
+        print "Removing requeued jobs: ".join(", ", @todelete)."\n";
     }
 }
 
