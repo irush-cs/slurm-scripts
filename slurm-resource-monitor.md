@@ -126,9 +126,10 @@ cgroup of the jobs. I.e. to
 /sys/fs/cgroup/memory/slurm/uid_<uid>/job-<jobid>/memory.max_usage_in_bytes
 ```
 
-A notification will be sent if the unused memory is more than
-`AllowedUnusedMemoryPercent`. A usage graph will be created if
-`NotifyMemoryGraph` is true.
+A notification will be sent if the unused memory percentage is more than
+`AllowedUnusedMemoryPercent` and the total unused memory is more than
+`MaxIgnoreUnusedMemory`. A usage graph will be created if `NotifyMemoryGraph`
+is true.
 
 ### Timelimit
 
@@ -259,5 +260,12 @@ This can be configured per user in ~/.slurm-resource-monitor.
 ### MaxArrayTaskId
 
 On array jobs, tasks above this will not be notified.
+
+This can be configured per user in ~/.slurm-resource-monitor.
+
+
+### MaxIgnoreUnusedMemory
+
+Maximum memory to ignore if unused.
 
 This can be configured per user in ~/.slurm-resource-monitor.

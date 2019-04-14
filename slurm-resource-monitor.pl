@@ -89,7 +89,9 @@ my %allowedunused = (cpus => {count => 2,
                               percent => 75},
                      gpus => {count => 1,
                               percent => 25},
-                     memory => {percent => 25},
+                     memory => {percent => 25,
+                                ignore => 1024,
+                               },
                     );
 
 # states:
@@ -292,6 +294,7 @@ sub read_conf {
     _update_setting(\$allowedunused{gpus}{count}, $config->{allowedunusedgpus}, "int", "AllowedUnusedGPUs");
     _update_setting(\$allowedunused{gpus}{percent}, $config->{allowedunusedgpupercent}, "percent", "AllowedUnusedGPUPercent");
     _update_setting(\$allowedunused{memory}{percent}, $config->{allowedunusedmemorypercent}, "percent", "AllowedUnusedMemoryPercent");
+    _update_setting(\$allowedunused{memory}{ignore}, $config->{maxignoreunusedmemory}, "int", "MaxIgnoreUnusedMemory");
 
     _update_setting(\$minmonitoredpercent, $config->{minmonitoredpercent}, "percent", "MinMonitoredPercent");
 
@@ -408,6 +411,7 @@ sub get_new_jobs {
                 $uconfig->{allowedunusedgpupercent} = to_percent($uconfig->{allowedunusedgpupercent}, $allowedunused{gpus}{percent});
                 $uconfig->{allowedunusedmemorypercent} = to_percent($uconfig->{allowedunusedmemorypercent}, $allowedunused{memory}{percent});
                 $uconfig->{maxarraytaskid} = to_int($uconfig->{maxarraytaskid}, $maxarraytaskid);
+                $uconfig->{maxignoreunusedmemory} = to_int($uconfig->{maxignoreunusedmemory}, $allowedunused{memory}{ignore});
 
                 $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
                 $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
@@ -415,7 +419,7 @@ sub get_new_jobs {
                 $jobstat->{memory}{notifyunused} = $uconfig->{notifyunusedmemory};
                 $jobstat->{cpus}{allowedunused} = {count => $uconfig->{allowedunusedcpus}, percent => $uconfig->{allowedunusedcpupercent}};
                 $jobstat->{gpus}{allowedunused} = {count => $uconfig->{allowedunusedgpus}, percent => $uconfig->{allowedunusedgpupercent}};
-                $jobstat->{memory}{allowedunused} = {percent => $uconfig->{allowedunusedmemorypercent}};
+                $jobstat->{memory}{allowedunused} = {percent => $uconfig->{allowedunusedmemorypercent}, ignore => $uconfig->{maxignoreunusedmemory}};
                 $jobstat->{cpus}{history} = [] if $notifyhistory{cpus};
                 $jobstat->{gpus}{history} = [] if $notifyhistory{gpus};
                 $jobstat->{memory}{history} = [] if $notifyhistory{memory};
@@ -537,26 +541,29 @@ sub clean_old {
                 $job->{shortjobnotify} = 1;
             }
 
-            if ($job->{memory}{notifyunused} and $job->{memory}{samples} and $job->{memory}{samples} >= $minsamples) {
-                if ($job->{memory}{count} * ((100 - $job->{memory}{allowedunused}{percent}) / 100) > $job->{memory}{max_usage}) {
-                    $job->{memory}{notify} = 1;
-                    $notify = 1;
-                    if ($notifyhistory{memory} and @{$job->{memory}{history}}) {
-                        make_path("$job->{runtimedir}");
-                        unless (-d $job->{runtimedir}) {
-                            print STDERR "Can't create $job->{runtimedir}\n";
-                            exit 21;
-                        }
-                        unless (open(RUNTIME, ">$job->{runtimedir}/memory")) {
-                            print STDERR "Can't save memory history: $!\n";
-                            exit 22;
-                        }
-                        foreach my $h (@{$job->{memory}{history}}) {
-                            print RUNTIME "$h->[0],$h->[1]\n";
-                        }
-                        close(RUNTIME);
-                        $job->{memory}{notifyhistory} = 1;
+            if ($job->{memory}{notifyunused}
+                and $job->{memory}{samples}
+                and $job->{memory}{samples} >= $minsamples
+                and $job->{memory}{count} * ((100 - $job->{memory}{allowedunused}{percent}) / 100) > $job->{memory}{max_usage}
+                and ($job->{memory}{count} - $job->{memory}{max_usage}) > $job->{memory}{allowedunused}{ignore}
+               ) {
+                $job->{memory}{notify} = 1;
+                $notify = 1;
+                if ($notifyhistory{memory} and @{$job->{memory}{history}}) {
+                    make_path("$job->{runtimedir}");
+                    unless (-d $job->{runtimedir}) {
+                        print STDERR "Can't create $job->{runtimedir}\n";
+                        exit 21;
                     }
+                    unless (open(RUNTIME, ">$job->{runtimedir}/memory")) {
+                        print STDERR "Can't save memory history: $!\n";
+                        exit 22;
+                    }
+                    foreach my $h (@{$job->{memory}{history}}) {
+                        print RUNTIME "$h->[0],$h->[1]\n";
+                    }
+                    close(RUNTIME);
+                    $job->{memory}{notifyhistory} = 1;
                 }
             }
         }

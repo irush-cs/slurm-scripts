@@ -106,3 +106,9 @@ NotifyInteractive=No
 # per user in ~/.slurm-resource-monitor.
 #
 MaxArrayTaskId=10
+
+#
+# Maximum unused memory to ignore if unused. This can be configured per user in
+# ~/.slurm-resource-monitor.
+#
+MaxIgnoreUnusedMemory=1024
