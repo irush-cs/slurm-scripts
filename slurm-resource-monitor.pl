@@ -314,6 +314,11 @@ sub read_conf {
 
     _update_setting(\$runtimedir, $config->{runtimedir}, "dir", "RuntimeDir");
 
+    unless (chdir($runtimedir)) {
+        print STDERR "Can't chdir to $runtimedir: $!\n";
+        exit 14;
+    }
+
     # clear stats, parameters might have changed
     %stats = ();
 }
