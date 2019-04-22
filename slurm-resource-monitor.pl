@@ -172,6 +172,10 @@ unless ($conffile) {
     }
 }
 
+if ($conffile !~ m/^\//) {
+    $conffile = getcwd."/$conffile";
+}
+
 sub to_bool {
     my $value = shift;
     my $default = shift;
@@ -331,6 +335,10 @@ read_conf();
 while (1) {
     if (time - $conf_update_check > $conf_update_check_interval) {
         my $new_conf_update = (stat $conffile)[9];
+        if (not $new_conf_update and $!) {
+            print STDERR "Can't read configuration from $conffile: $!\n";
+            exit 40;
+        }
         if ($new_conf_update != $conf_last_update) {
             read_conf();
         }
