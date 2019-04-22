@@ -22,6 +22,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     nodes2array
                     get_config
                     get_jobs
+                    get_nodes
                     parse_conf
                     time2sec
                   );
@@ -463,6 +464,60 @@ sub get_jobs {
     return $jobs;
 }
 
+
+=head2 get_nodes
+
+ $results = get_nodes()
+
+Get nodes hash ref by calling "scontrol show nodes -dd". Uses the
+I<parse_scontrol_show>, with the following modifications:
+
+=over
+
+=over
+
+=item Gres - Empty string instead of "(null)".
+
+=back
+
+=back
+
+In addition to the normal values, the following calculated values are also
+available:
+
+=over
+
+=over
+
+=item _Gres       - Hash of Gres
+
+=back
+
+=back
+
+=cut
+
+sub get_nodes {
+
+    my %args = @_;
+    my $nodes;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_scontrol_output}) {
+        $nodes = parse_scontrol_show($args{_scontrol_output});
+    } else {
+        $nodes = parse_scontrol_show([`scontrol show nodes -dd`]);
+    }
+
+    foreach my $node (values %$nodes) {
+        if ($node->{Gres} and $node->{Gres} eq "(null)") {
+            $node->{Gres} = "";
+        }
+        $node->{_Gres} = split_gres($node->{Gres}, {});
+    }
+
+    return $nodes;
+}
 
 =head2 parse_conf
 

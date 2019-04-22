@@ -161,6 +161,13 @@ In addition, the following calculated values are also available per detail:
 Also, the job hash contains the following additional values:
 * _TRES       - Hash of TRES
 
+### get_nodes
+
+Get nodes hash ref by calling `scontrol show nodes -dd`. Uses the
+ `parse_scontrol_show` function with the following updates:
+ * GRES   - Empty strin ginstead of "(null)".
+ * \_Gres - Computed `GRES` hash
+
 ### cshuji/Slurm/Local.pm
 
 This file, if exists, is loaded and exported automatically. It is used mainly
