@@ -13,6 +13,16 @@
 use strict;
 use warnings;
 
+my $scriptdir;
+BEGIN {
+    use Cwd;
+    use File::Basename;
+    $scriptdir = dirname(Cwd::realpath($0));
+}
+$scriptdir = '.' unless (defined $scriptdir);
+use lib "$scriptdir";
+use cshuji::Slurm qw(mb2string);
+
 use Email::Stuffer;
 use Net::Domain qw(hostdomain);
 use Text::Table;
@@ -87,32 +97,51 @@ foreach my $res (qw(cpus gpus)) {
     if ($job->{$res}{notify}) {
         my $badpercent = round(100 * $job->{$res}{baduse} / $job->{$res}{samples});
         my $baduse = $job->{$res}{count} - $job->{$res}{allowedunused}{count} + 1;
-        $body .= "You have requested $job->{$res}{count} $res, but at least ${badpercent}\% of the time you used less than $baduse $res\n";
-        $body .= "\n";
-        $body .= "$res usage:\n";
+        my $betterpercent = 0.66 * $job->{$res}{allowedunused}{percent};
+        my $betteruse = 0;
+        my $psum = 0;
 
         my $table = Text::Table->new({title => "# $res", align => "right", align_title => "right"}, \" | ", {title => "% of time used", align => "right", align_title => "left"});
         foreach my $count (reverse sort {$a <=> $b} keys %{$job->{$res}{usage}}) {
-            $table->add($count, round(100 * $job->{$res}{usage}{$count} / $job->{$res}{samples}).'%');
+            my $percent = round(100 * $job->{$res}{usage}{$count} / $job->{$res}{samples});
+            $psum += $percent;
+            $betteruse = $count if $psum <= $betterpercent;
+            $table->add($count, "${percent}\%");
         }
+
+        $body .= "You have requested $job->{$res}{count} $res, but at least ${badpercent}\% of the time you used less than $baduse $res.\n";
+        if ($betteruse > 0 and $betteruse < $job->{$res}{count}) {
+            $body .= "You might get better timing if you request $betteruse $res.\n";
+        }
+        $body .= "\n";
+
+        $body .= "$res usage:\n";
         $body .= $table->title();
         $body .= $table->rule("-", "+");
         $body .= $table->body();
         $body .= "\n";
 
         plot($job, $res);
+
     }
 }
 
 if ($job->{memory}{notify}) {
     my $badpercent = round(100 * $job->{memory}{max_usage} / $job->{memory}{count});
-    $body .= "You have requested $job->{memory}{count} MB RAM, but your max usage was only $job->{memory}{max_usage} MB (${badpercent}\%)\n";
+
+    my $betterpercent = (0.66 * $job->{memory}{allowedunused}{percent}) / 100;
+    my $betteruse = int($job->{memory}{max_usage} + ($betterpercent * $job->{memory}{max_usage}) / (1 - $betterpercent));
+
+    $body .= "You have requested ".mb2string($job->{memory}{count}, space => 1)."B RAM, but your max usage was ".mb2string($job->{memory}{max_usage}, space => 1)."B (${badpercent}\%)\n";
+    if ($betteruse > 10 and $betteruse < $job->{memory}{count} and $betteruse > $job->{memory}{max_usage}) {
+        $body .= "You might get better timing if you request ".mb2string($betteruse, space => 1)."B.\n";
+    }
     $body .= "\n";
     plot($job, "memory");
 }
 
 if ($job->{shortjobnotify}) {
-    $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is only $job->{runtimepercent}% of the requested time.\n";
+    $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is $job->{runtimepercent}% of the requested time.\n";
 }
 
 if ($body) {
@@ -125,6 +154,27 @@ Your job $job->{jobid} on $job->{node} ($job->{cluster}) was allocated more reso
     $body .= "
 Please adjust your future jobs parameters to ensure better utilization of the
 cluster and faster starting time of your and other's jobs.
+
+If you want to stop receiving these mails but continue wasting resources and
+time, you can add one or more of the following lines into
+~/.slurm-resource-monitor:
+
+NotifyShortJob=No
+NotifyUnusedCPUs=No
+NotifyUnusedGPUs=No
+NotifyUnusedMemory=No
+
+If you want to fine tune the reported parameters, please look at:
+https://github.com/irush-cs/slurm-scripts/blob/master/slurm-resource-monitor.md
+
+Job data (on $job->{node}):
+  CPUs:       $job->{cpus}{count}
+  GPUs:       $job->{gpus}{count}
+  Memory:     ".mb2string($job->{memory}{count}, space => 1)."B
+  SubmitTime: $job->{submittime}
+  StartTime:  $job->{starttime}
+  EndTime:    $job->{endtime}
+  RunTime:    $job->{runtime}
 
 Regards,
 Slurm Resource Monitor
