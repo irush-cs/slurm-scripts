@@ -728,13 +728,15 @@ sub string2mb {
 
 =head2 mb2string
 
- $results = mb2string($memory, [precision => $precision])
+ $results = mb2string($memory, [precision => $precision], [space => $space])
 
 Converts memory from MB to general memory. The input B<$memory> should be of
 the form m/^\d+(\.\d+)?\s*(M|MB)?$/i and represent memory in MB.
 
 If B<$precision> is given, it is used as the 'f' prefix of printf. The default
 value is "2" (i.e. %.2f).
+
+If B<$space> is true, there will be a space before the memory suffix.
 
 Returns string with memory suffix (human readable), or undef on error.
 
@@ -745,6 +747,10 @@ sub mb2string {
     my %args = @_;
 
     $args{precision} //= "2";
+    $args{space} //= 0;
+    $args{space} = $args{space} ? " " : "";
+
+    return undef unless $args{precision} =~ m/^\d$/;
 
     if ($mb =~ m/^(\d+(?:\.\d+)?)?\s*(M|MB)?$/i) {
         my $bytes = $1 * 1024 * 1024;
@@ -756,7 +762,7 @@ sub mb2string {
             last if $bytes < 1000;
             $bytes /= 1024;
         }
-        my $fmt = "\%.$args{precision}f\%s";
+        my $fmt = "\%.$args{precision}f$args{space}\%s";
         return sprintf $fmt, $bytes, $suffix;
     }
 
