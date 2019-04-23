@@ -13,6 +13,7 @@ package cshuji::Slurm;
 
 use Clone;
 use List::Util;
+use POSIX qw();
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -25,6 +26,8 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_nodes
                     parse_conf
                     time2sec
+                    string2mb
+                    mb2string
                   );
 our @EXPORT = qw();
 
@@ -204,17 +207,7 @@ sub split_gres {
             if ($gres->{$t} =~ m/^((\d+[MGTP]),)*(\d+[MGTP])$/) {
                 my $sum = 0;
                 foreach my $sub (split /,/, $gres->{$t}) {
-                    my ($sub1, $sub2) = $sub =~ m/^(\d+)([MGTP])$/;
-                    if ($sub2 eq "M") {
-                        $sub = $sub1;
-                    } elsif ($sub2 eq "G") {
-                        $sub = $sub1 * 1024;
-                    } elsif ($sub2 eq "T") {
-                        $sub = $sub1 * 1024 * 1024;
-                    } elsif ($sub2 eq "P") {
-                        $sub = $sub1 * 1024 * 1024 * 1024;
-                    }
-                    $sum += $sub;
+                    $sum += string2mb($sub);
                 }
                 $gres->{$t} = "${sum}M";
             }
@@ -699,6 +692,75 @@ sub time2sec {
     }
 
     return $seconds;
+}
+
+=head2 string2mb
+
+ $results = string2mb($memstring)
+
+Convert memory string to MB integer. I.e. everything that matches the regexp
+m/^\d+(\.\d+)?\s*[KMGTP]?B?$/i is converted to megabytes. Without suffix, the
+number is assumbed to be in bytes.
+
+Returns undef on error, or integer representing megabytes (floored).
+
+=cut
+
+sub string2mb {
+    my $string = shift;
+    my $mb = undef;
+
+    if ($string =~ m/^(\d+(?:\.\d+)?)\s*([KMGTP])?B?$/i) {
+        my $bytes = $1;
+        my $suffix = $2 // 'B';
+        $suffix = uc($suffix);
+        my @suffixes = qw(B K M G T P);
+
+        for (my $current = shift @suffixes; $current and $current ne $suffix; $current = shift @suffixes) {
+            $bytes *= 1024;
+        }
+
+        $mb = POSIX::floor($bytes / 1024 / 1024);
+    }
+
+    return $mb;
+}
+
+=head2 mb2string
+
+ $results = mb2string($memory, [precision => $precision])
+
+Converts memory from MB to general memory. The input B<$memory> should be of
+the form m/^\d+(\.\d+)?\s*(M|MB)?$/i and represent memory in MB.
+
+If B<$precision> is given, it is used as the 'f' prefix of printf. The default
+value is "2" (i.e. %.2f).
+
+Returns string with memory suffix (human readable), or undef on error.
+
+=cut
+
+sub mb2string {
+    my $mb = shift;
+    my %args = @_;
+
+    $args{precision} //= "2";
+
+    if ($mb =~ m/^(\d+(?:\.\d+)?)?\s*(M|MB)?$/i) {
+        my $bytes = $1 * 1024 * 1024;
+
+        my @suffixes = qw(B K M G T P);
+        my $suffix;
+        for ($suffix = shift @suffixes; @suffixes; $suffix = shift@suffixes) {
+            # 0.98T is better than 1007.89G
+            last if $bytes < 1000;
+            $bytes /= 1024;
+        }
+        my $fmt = "\%.$args{precision}f\%s";
+        return sprintf $fmt, $bytes, $suffix;
+    }
+
+    return undef;
 }
 
 1;
