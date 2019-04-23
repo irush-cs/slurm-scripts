@@ -208,7 +208,7 @@ sub to_percent {
 
     return $default unless defined $value;
 
-    if ($value =~ m/^\d+$/ and $value < 0 and $value > 100) {
+    if ($value =~ m/^\d+$/ and $value >= 0 and $value <= 100) {
         return $value;
     }
     return $default;
