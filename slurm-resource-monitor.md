@@ -53,8 +53,8 @@ be placed in the same directory as `slurm.conf`, or supplied using the `-c`
 argument.
 
 When a job finishes, if a notification needs to be sent and external script
-`NotificationScript` is run with the `SLURM_RESOURCE_MONITOR_DATA` environment
-variable set to a perl hash with job's data.
+`NotificationScript` is run with the first parameter pointing to a json file
+with the job's data.
 
 ### CPU
 
@@ -142,8 +142,8 @@ An example systemd service file that can be used to start the daemon.
 
 ## slurm-monitor-notification.pl
 
-The basic notification script the daemon will call. The script will parse the
-`SLURM_RESOURCE_MONITOR_DATA` environment variable and send mail accordingly.
+The basic notification script the daemon will call. The script will parse given
+json file (first parameter) and send mail accordingly.
 
 The `NotificationScript` configuration should point to the installation
 location of this script.
@@ -164,7 +164,7 @@ jobs).
 ### NotificationScript
 
 The script to run when a notification needs to be sent. The job's data is
-supplied via the `SLURM_RESOURCE_MONITOR_DATA` environment variable.
+supplied via a json file.
 
 ### NotificationRecipients
 

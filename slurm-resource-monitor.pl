@@ -35,6 +35,7 @@ use Getopt::Long;
 use Sys::Hostname;
 use Time::ParseDate;
 use File::Path qw(make_path remove_tree);
+use JSON;
 
 $Data::Dumper::Sortkeys = 1;
 
@@ -580,7 +581,6 @@ sub clean_old {
                 }
             }
         }
-        print "old job: ".Dumper($job) if $debug;
         if ($notify) {
             $job->{recipients} = [@recipients];
             if ($config->{notificationreplyto}) {
@@ -589,6 +589,26 @@ sub clean_old {
             if ($config->{notificationbcc}) {
                 $job->{recipientsbcc} = [map {$_ =~ s/^\s*|\s*$//g; $_} split /,/, $config->{notificationbcc}];
             }
+
+            # save data in json
+            delete $job->{cpus}{history};
+            delete $job->{gpus}{history};
+            delete $job->{memory}{history};
+            make_path("$job->{runtimedir}");
+            unless (-d $job->{runtimedir}) {
+                print STDERR "Can't create $job->{runtimedir}\n";
+                exit 23;
+            }
+            unless (open(RUNTIME, ">$job->{runtimedir}/data")) {
+                print STDERR "Can't save job data: $!\n";
+                exit 24;
+            }
+            my $json = JSON->new;
+            $json = $json->pretty if $debug;
+            print RUNTIME $json->encode($job);
+            close(RUNTIME);
+
+            # fork
             my $pid = fork();
             unless (defined $pid) {
                 print STDERR "fork() failed: $!\n";
@@ -597,10 +617,7 @@ sub clean_old {
             unless ($pid) {
                 # child
                 local $SIG{CHLD} = 'DEFAULT';
-                delete $job->{cpus}{history};
-                delete $job->{gpus}{history};
-                $ENV{SLURM_RESOURCE_MONITOR_DATA} = Data::Dumper->Dump([$job], [qw(job)]);
-                my $exit = system($config->{notificationscript});
+                my $exit = system($config->{notificationscript}, "$job->{runtimedir}/data");
                 remove_tree("$job->{runtimedir}") unless $debug;
                 exit $exit >> 8;
             }

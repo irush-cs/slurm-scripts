@@ -28,14 +28,20 @@ use Net::Domain qw(hostdomain);
 use Text::Table;
 use POSIX qw(round);
 use Time::Local;
+use JSON;
 
 my $domain = hostdomain;
 
-unless (exists $ENV{SLURM_RESOURCE_MONITOR_DATA}) {
-    exit 1;
-}
 my $job;
-eval $ENV{SLURM_RESOURCE_MONITOR_DATA};
+if ($ARGV[0] and -r $ARGV[0]) {
+    open(DATA, "$ARGV[0]") or exit 2;
+    my $data = join "", <DATA>;
+    close(DATA);
+    $job = JSON->new->decode($data);
+} elsif (exists $ENV{SLURM_RESOURCE_MONITOR_DATA}) {
+    eval $ENV{SLURM_RESOURCE_MONITOR_DATA};
+}
+exit 1 unless $job;
 
 my $body = "";
 
