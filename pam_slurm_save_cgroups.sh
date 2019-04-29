@@ -44,11 +44,21 @@ case "$1" in
         # systemd uses the unified cgroup-v2. If we keep it, "systemctl
         # daemon-reload" will trash our work and reset the v1 cgroups.
         unified=`mount | awk '$4=="type"&&$5=="cgroup2"{print $3}' | tail -n 1`
+        jobdir=`awk -F: '$3~/\/job_/{print $3}' ${_savefile} | head -n 1 | tr / '\n' | grep ^job_`
+        uiddir=`awk -F: '$3~/\/uid_/{print $3}' ${_savefile} | head -n 1 | tr / '\n' | grep ^uid_`
         if [[ -n "${unified}" && -d "${unified}" ]]; then
-            jobdir=`awk -F: '$3~/\/job_/{print $3}' ${_savefile} | head -n 1 | tr / '\n' | grep ^job_`
-            uiddir=`awk -F: '$3~/\/uid_/{print $3}' ${_savefile} | head -n 1 | tr / '\n' | grep ^uid_`
             mkdir -p "${unified}"/slurm/$uiddir/$jobdir
             echo $_ppid >> "${unified}"/slurm/$uiddir/$jobdir/cgroup.procs
+        fi
+        # without cgroup-v2, it uses the name=systemd to mess things up.
+        systemdcg=`mount | awk '$4=="type"&&$5=="cgroup"&&$6~/\Wname=systemd\W/{print $3}'`
+        if [[ -n "${systemdcg}" && -d "${systemdcg}" ]]; then
+            # can't use the slurm service, as then can't restart
+            # it. We'll make a slurm dir and hope systemd doesn't complain
+            #tasks=`awk -F: '$2=="name=systemd"{printf "'"${systemdcg}"'/%s/tasks\n", $3}' ${_savefile}`
+            #tasks=${systemdcg}/tasks
+            mkdir -p "${systemdcg}"/slurm/$uiddir/$jobdir
+            echo $_ppid >> "${systemdcg}"/slurm/$uiddir/$jobdir/tasks
         fi
 
         rm "${_savefile}"
