@@ -37,7 +37,7 @@ case "$1" in
         cat /proc/$_ppid/cgroup > $_savefile
     ;;
     restore)
-        for cgroup in `awk -F: '$2&&$3~/^\/slurm\// {printf "/sys/fs/cgroup/%s%s/tasks\n", $2, $3}' ${_savefile}`; do
+        for cgroup in `awk -F: '$2&&$3~/^\/slurm\//&&$2!~/name=systemd/ {printf "/sys/fs/cgroup/%s%s/tasks\n", $2, $3}' ${_savefile}`; do
             echo $_ppid >> $cgroup
         done
 
