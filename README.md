@@ -169,6 +169,11 @@ In addition, the following calculated values are also available per detail:
 Also, the job hash contains the following additional values:
 * _TRES       - Hash of TRES
 
+### get\_clusters
+
+Get clusters hash refs by calling `sacctmgr list clusters`. Uses the
+`parse_list` function. Returns a hash of clusters by name.
+
 ### get_nodes
 
 Get nodes hash ref by calling `scontrol show nodes -dd`. Uses the

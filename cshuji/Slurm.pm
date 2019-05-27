@@ -24,6 +24,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     nodes2array
                     get_config
                     get_jobs
+                    get_clusters
                     get_nodes
                     parse_conf
                     time2sec
@@ -497,6 +498,35 @@ sub get_jobs {
     return $jobs;
 }
 
+
+=head2 get_clusters
+
+ $results = get_clusters()
+
+Get clusters hash refs by calling "sacctmgr list clusters". Uses the
+I<parse_list> function. Returns a hash of clusters by name.
+
+=cut
+
+sub get_clusters {
+
+    my %args = @_;
+    my $clusters;
+    my %clusters;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_sacctmgr_output}) {
+        $clusters = parse_list($args{_sacctmgr_output});
+    } else {
+        $clusters = parse_list([`sacctmgr list clusters -p`]);
+    }
+
+    foreach my $cluster (@$clusters) {
+        $clusters{$cluster->{Cluster}} = $cluster;
+    }
+
+    return {%clusters};
+}
 
 =head2 get_nodes
 
