@@ -18,6 +18,7 @@ use POSIX qw();
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(parse_scontrol_show
+                    parse_list
                     split_gres
                     nodecmp
                     nodes2array
@@ -153,6 +154,45 @@ sub parse_scontrol_show {
     return \%results;
 }
 
+=head2 parse_list
+
+ $results = parse_list($lines)
+
+Converts the lines returned by various slurm utilities to an array ref
+(sacctmgr and sacct). The entries are delimited by pipe '|', and the first line
+are the headers. Usually the '-p' option should be added to the commands, and
+the '-n' should not.
+
+Example:
+
+  parse_list([`sacctmgr list clusters -p`])
+  parse_list([`sacctmgr list accounts -s -p`])
+  parse_list([`sacct -p -a -o\%all`])
+
+=cut
+
+sub parse_list {
+    my $lines = shift;
+    my @results;
+    my @headers;
+
+    my $header = shift @$lines;
+    chomp($header);
+    @headers = split /\|/, $header, -1;
+    my $pop = length($headers[-1]) == 0;
+    pop @headers if $pop;
+
+    foreach my $line (@$lines) {
+        chomp($line);
+        my @entries = split /\|/, $line, -1;
+        pop @entries if $pop;
+        my %entry;
+        @entry{@headers} = @entries;
+        push @results, \%entry;
+    }
+
+    return [@results];
+}
 
 =head2 split_gres
 

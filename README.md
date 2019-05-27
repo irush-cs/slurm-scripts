@@ -115,6 +115,14 @@ Parses some of the `scontrol show` commands into a perl hash.
 $results = parse_scontrol_show([`scontrol show job -dd`])
 ```
 
+### parse\_list
+
+Parses some of the lists returned by various slurm utilities into a perl array
+ref. E.g:
+```
+$results = parse_list([`sacctmgr list users -s -p`])
+```
+
 ### split\_gres
 
 Splits a GRES or TRES string to a perl hash. Can combine the has with previous
