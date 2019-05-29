@@ -174,6 +174,37 @@ Also, the job hash contains the following additional values:
 Get clusters hash refs by calling `sacctmgr list clusters`. Uses the
 `parse_list` function. Returns a hash of clusters by name.
 
+### get\_accounts
+
+Get array ref of account hash refs by calling `sacctmgr list accounts` and
+using the `parse_list` function. Only the accounts are returned (i.e. where
+`User` is empty).
+
+The returned fields are:
+
+* Description
+* Org
+* Cluster
+* ParentName
+* User
+* Share
+* GrpJobs
+* GrpNodes
+* GrpCPUs
+* GrpMem
+* GrpSubmit
+* GrpWall
+* GrpCPUMins
+* MaxJobs
+* MaxNodes
+* MaxCPUs
+* MaxSubmit
+* MaxWall
+* MaxCPUMins
+* QOS
+* DefaultQOS
+* GrpTRES
+
 ### get_nodes
 
 Get nodes hash ref by calling `scontrol show nodes -dd`. Uses the

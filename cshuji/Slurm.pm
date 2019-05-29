@@ -26,6 +26,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_jobs
                     get_clusters
                     get_nodes
+                    get_accounts
                     parse_conf
                     time2sec
                     string2mb
@@ -526,6 +527,88 @@ sub get_clusters {
     }
 
     return {%clusters};
+}
+
+=head2 get_accounts
+
+ $results = get_accounts()
+
+Get array ref of account hash refs by calling "sacctmgr list accounts" and
+using the I<parse_list> function. Only the accounts are returned (i.e. where
+User is empty).
+
+The returned fields are:
+
+=over
+
+=over
+
+=item Account
+
+=item Description
+
+=item Org
+
+=item Cluster
+
+=item ParentName
+
+=item User
+
+=item Share
+
+=item GrpJobs
+
+=item GrpNodes
+
+=item GrpCPUs
+
+=item GrpMem
+
+=item GrpSubmit
+
+=item GrpWall
+
+=item GrpCPUMins
+
+=item MaxJobs
+
+=item MaxNodes
+
+=item MaxCPUs
+
+=item MaxSubmit
+
+=item MaxWall
+
+=item MaxCPUMins
+
+=item QOS
+
+=item DefaultQOS
+
+=item GrpTRES
+
+=back
+
+=back
+
+=cut
+
+sub get_accounts {
+
+    my %args = @_;
+    my $accounts;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_sacctmgr_output}) {
+        $accounts = parse_list($args{_sacctmgr_output});
+    } else {
+        $accounts = parse_list([`sacctmgr list accounts -s -p "format=Account,Description,Org,Cluster,ParentName,User,Share,GrpJobs,GrpNodes,GrpCPUs,GrpMem,GrpSubmit,GrpWall,GrpCPUMins,MaxJobs,MaxNodes,MaxCPUs,MaxSubmit,MaxWall,MaxCPUMins,QOS,DefaultQOS,GrpTRES"`]);
+    }
+    $accounts = [grep {$_->{User} eq ''} @$accounts];
+
+    return $accounts;
 }
 
 =head2 get_nodes
