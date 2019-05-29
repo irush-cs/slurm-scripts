@@ -205,6 +205,35 @@ The returned fields are:
 * DefaultQOS
 * GrpTRES
 
+
+### get\_associations
+
+Get array ref of association hash refs by calling `sacctmgr list associations`
+and using the `parse_list` function. All associations are returned, including
+base ones (with empty user or empty partition).
+
+The returned fields are:
+
+* Cluster
+* Account
+* User
+* Partition
+* Share
+* GrpJobs
+* GrpTRES
+* GrpSubmit
+* GrpWall
+* GrpTRESMins
+* MaxJobs
+* MaxTRES
+* MaxTRESPerNode
+* MaxSubmit
+* MaxWall
+* MaxTRESMins
+* QOS
+* Def QOS
+* GrpTRESRunMins
+
 ### get_nodes
 
 Get nodes hash ref by calling `scontrol show nodes -dd`. Uses the

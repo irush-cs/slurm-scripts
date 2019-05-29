@@ -27,6 +27,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_clusters
                     get_nodes
                     get_accounts
+                    get_associations
                     parse_conf
                     time2sec
                     string2mb
@@ -609,6 +610,80 @@ sub get_accounts {
     $accounts = [grep {$_->{User} eq ''} @$accounts];
 
     return $accounts;
+}
+
+
+=head2 get_associations
+
+ $results = get_associations()
+
+Get array ref of association hash refs by calling "sacctmgr list associations"
+and using the I<parse_list> function. All associations are returned, including
+base ones (with empty user or empty partition).
+
+The returned fields are:
+
+=over
+
+=over
+
+=item Cluster
+
+=item Account
+
+=item User
+
+=item Partition
+
+=item Share
+
+=item GrpJobs
+
+=item GrpTRES
+
+=item GrpSubmit
+
+=item GrpWall
+
+=item GrpTRESMins
+
+=item MaxJobs
+
+=item MaxTRES
+
+=item MaxTRESPerNode
+
+=item MaxSubmit
+
+=item MaxWall
+
+=item MaxTRESMins
+
+=item QOS
+
+=item Def QOS
+
+=item GrpTRESRunMins
+
+=back
+
+=back
+
+=cut
+
+sub get_associations {
+
+    my %args = @_;
+    my $associations;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_sacctmgr_output}) {
+        $associations = parse_list($args{_sacctmgr_output});
+    } else {
+        $associations = parse_list([`sacctmgr list associations -s -p "format=Cluster,Account,User,Partition,Share,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,Def QOS,GrpTRESRunMins"`]);
+    }
+
+    return [@$associations];
 }
 
 =head2 get_nodes
