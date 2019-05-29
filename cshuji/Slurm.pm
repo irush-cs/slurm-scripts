@@ -680,7 +680,7 @@ sub get_associations {
     if ($args{_sacctmgr_output}) {
         $associations = parse_list($args{_sacctmgr_output});
     } else {
-        $associations = parse_list([`sacctmgr list associations -s -p "format=Cluster,Account,User,Partition,Share,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,Def QOS,GrpTRESRunMins"`]);
+        $associations = parse_list([`sacctmgr list associations -s -p "format=Cluster,Account,User,Partition,Share,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins"`]);
     }
 
     return [@$associations];
