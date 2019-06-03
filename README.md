@@ -174,6 +174,57 @@ Also, the job hash contains the following additional values:
 Get clusters hash refs by calling `sacctmgr list clusters`. Uses the
 `parse_list` function. Returns a hash of clusters by name.
 
+### set\_ cluster
+
+For multiple clusters, this sets `PATH` and `SLURM_CONF` to work with the
+specified cluster.
+
+```
+set_cluster($cluster, [path => \@path], [conf => $conf], [unset => <1|0>])
+```
+
+If `path` is given, they are simply prepended to the `PATH` environment.
+
+If `path` is undef, `get_config` is called for the current cluster name. Then
+the location of 'scontrol' and 'slurmctld' is search in `PATH`. If the path of
+'scontrol' and 'slurmctld' contains the current cluster's name, it is replaced
+with the new name and replaced in the `PATH` (if they exist in the resulting
+path).
+
+If `conf` is given, `SLURM_CONF` is set appropriately.
+
+If `conf` is undef, `get_config` is called (before `PATH` is changed). If the
+current `SLURM_CONF` or the `SLURM_CONF` from `get_config` contains the current
+cluster name, it is replaced with the new cluster name. Otherwise (or if the
+new `SLURM_CONF` doesn't exists), `get_config` is called with `$cluster` (with
+the new path) and `SLURM_CONF` is taken from there.
+
+If `unset` is true, `PATH` and `SLURM_CONF` are reset to their original value
+before the first call to `set_cluster`. `$cluster` is ignored.
+
+A second call to `set_cluster` will reset both `PATH` and `SLURM_CONF` to their
+previous states before starting to set the new cluster (like with
+`unset`). This means that if `PATH` or `SLURM_CONF` were changed outside
+`set_cluster`, they will be reverted.
+
+The return value is boolean of whether the change worked. This is checked using
+`get_config`, and comparing the result ClusterName with `$cluster`.
+
+This mechanism lets cshuji::Slurm work with several clusters which might
+operate on different versions (and may require different binaries). It is best
+to set the paths of the binaries and the slurm.conf files to contain the
+cluster names (and make sure the clusters aren't named "usr" or "bin").
+
+For example, the slurm.conf can be in:
+* /etc/slurm/clusterA/slurm.conf
+* /etc/slurm/clusterB/slurm.conf
+
+And the binaries might be:
+* /usr/local/slurm/17.02.1/{bin,sbin,...}
+* /usr/local/slurm/17.11.3/{bin,sbin,...}
+* /usr/local/slurm/clusterA -> /usr/local/slurm/17.02.1
+* /usr/local/slurm/clusterB -> /usr/local/slurm/17.11.3
+
 ### get\_accounts
 
 Get array ref of account hash refs by calling `sacctmgr list accounts` and

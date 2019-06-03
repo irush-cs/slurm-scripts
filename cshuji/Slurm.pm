@@ -25,6 +25,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_config
                     get_jobs
                     get_clusters
+                    set_cluster
                     get_nodes
                     get_accounts
                     get_associations
@@ -831,9 +832,10 @@ sub parse_conf {
 
 =head2 get_config
 
- $results = get_config([errors => $arrref])
+ $results = get_config([errors => $arrref], [cluster => $cluster])
 
-Calls `scontrol show config` and parses the output into a hash ref.
+Calls `scontrol show config` and parses the output into a hash ref. If $cluster
+is specified, "-M $cluster" is added.
 
 If I<errors> is given, will contain any errors. Otherwise errors will be printed
 to stderr.
@@ -843,6 +845,7 @@ to stderr.
 sub get_config {
     my %args = @_;
     my $errors = $args{errors};
+    my $cluster = $args{cluster};
     my $config = {};
     my @lines;
     local $SIG{CHLD} = 'DEFAULT';
@@ -850,9 +853,11 @@ sub get_config {
     if ($args{_scontrol_output}) {
         @lines = @{$args{_scontrol_output}};
     } else {
-        @lines = `scontrol show config`;
+        my $cmd = "scontrol show config";
+        $cmd = "scontrol -M $cluster show config" if $cluster;
+        @lines = `$cmd`;
         if (not @lines or $?) {
-            my $err = "Can't run scontrol show config";
+            my $err = "Can't run $cmd";
             if ($errors) {
                 push @$errors, $err;
             } else {
@@ -995,6 +1000,155 @@ sub mb2string {
     }
 
     return undef;
+}
+
+
+=head2 set_cluster
+
+ $result = set_cluster($cluster, [path => \@path], [conf => $conf], [unset => <1|0>])
+
+For multiple clusters, this sets PATH and SLURM_CONF to work with the specified
+cluster.
+
+If I<path> is given, they are simply prepended to the PATH environment.
+
+If I<path> is undef, I<get_config> is called for the current cluster name. Then
+the location of 'scontrol' and 'slurmctld' is search in PATH. If the path of
+scontrol and slurmctld contains the current cluster's name, it is replaced with
+the new name and replaced in the PATH (if they exist in the resulting path).
+
+If I<$conf> is given, SLURM_CONF is set appropriately.
+
+If I<$conf> is undef, I<get_config> is called (before PATH is changed). If the
+current SLURM_CONF or the SLURM_CONF from get_config contains the current
+cluster name, it is replaced with the new cluster name. Otherwise (or if the
+new SLURM_CONF doesn't exists), I<get_config> is called with $cluster (with the
+new path) and SLURM_CONF is taken from there.
+
+If I<unset> is true, PATH and SLURM_CONF are reset to their original value
+before the first call to I<set_cluster>. I<$cluster> is ignored.
+
+A second call to I<set_cluster> will reset both PATH and SLURM_CONF to their
+previous states before starting to set the new cluster (like with
+I<unset>). This means that if PATH or SLURM_CONF were changed outside
+I<set_cluster>, they will be reverted.
+
+The return value is boolean of whether the change worked. This is checked using
+I<get_config>, and comparing the result ClusterName with I<$cluster>.
+
+This mechanism lets cshuji::Slurm work with several clusters which might
+operate on different versions (and may require different binaries). It is best
+to set the paths of the binaries and the slurm.conf files to contain the
+cluster names (and make sure the clusters aren't named "usr" or "bin").
+
+For example, the slurm.conf can be in:
+
+=over
+
+=item /etc/slurm/clusterA/slurm.conf
+
+=item /etc/slurm/clusterB/slurm.conf
+
+=back
+
+And the binaries might be:
+
+=over
+
+=item /usr/local/slurm/17.02.1/{bin,sbin,...}
+
+=item /usr/local/slurm/17.11.3/{bin,sbin,...}
+
+=item /usr/local/slurm/clusterA -> /usr/local/slurm/17.02.1
+
+=item /usr/local/slurm/clusterB -> /usr/local/slurm/17.11.3
+
+=back
+
+=cut
+
+my $_old_cluster;
+sub set_cluster {
+    my $cluster = shift;
+    my %args = @_;
+    my $unset = $args{unset} // 0;
+
+    # restore previous PATH and SLURM_CONF
+    if ($_old_cluster) {
+        foreach my $key (keys %$_old_cluster) {
+            if (defined $_old_cluster->{$key}) {
+                $ENV{$key} = $_old_cluster->{$key};
+            } else {
+                delete $ENV{$key};
+            }
+        }
+    } else {
+        $_old_cluster = {
+                         PATH => $ENV{PATH},
+                         SLURM_CONF => $ENV{SLURM_CONF},
+                        };
+    }
+
+    return if $unset;
+
+    my $config = get_config();
+    my $oldname = $config->{ClusterName};
+
+    # PATH
+    if ($args{path} and ref $args{path} eq "ARRAY") {
+        $ENV{PATH} = join(":", (@{$args{path}}, $ENV{PATH}))
+    } else {
+        my @PATH = ();
+        foreach my $path (split /:/, $ENV{PATH}) {
+            foreach my $prog (qw(scontrol slurmctld)) {
+                if (-x "${path}/${prog}" and $path =~ m/\b$oldname\b/) {
+                    my $newpath = $path;
+                    $newpath =~ s/\b$oldname\b/$cluster/;
+                    if (-x "${newpath}/${prog}") {
+                        $path = $newpath;
+                        last;
+                    }
+                }
+            }
+            push @PATH, $path;
+        }
+        $ENV{PATH} = join(":", @PATH);
+    }
+
+    # SLURM_CONF
+    if ($args{conf} and -e $args{conf}) {
+        $ENV{SLURM_CONF} = $args{conf};
+    } else {
+        my $oldconf;
+
+        # try updateding old SLURM_CONF
+        if (exists $ENV{SLURM_CONF} and $ENV{SLURM_CONF} =~ m/\b$oldname\b/) {
+            $oldconf = $ENV{SLURM_CONF};
+            $oldconf =~ s/\b$oldname\b/$cluster/;
+        }
+
+        # try updating the SLURM_CONF from the config
+        if ((not defined $oldconf or not -e $oldconf) and
+            exists $config->{SLURM_CONF} and $config->{SLURM_CONF} =~ m/\b$oldname\b/) {
+            $oldconf = $config->{SLURM_CONF};
+            $oldconf =~ s/\b$oldname\b/$cluster/;
+        }
+
+        # try running get_config($cluster)
+        if (not defined $oldconf or not -e $oldconf) {
+            my $newconfig = get_config(cluster => $cluster);
+            $oldconf = $newconfig->{SLURM_CONF};
+        }
+
+        if ($oldconf) {
+            $ENV{SLURM_CONF} = $oldconf;
+        } else {
+            return 0;
+        }
+    }
+
+    my $newconfig = get_config();
+    return $newconfig and $newconfig->{ClusterName} ne $cluster;
 }
 
 1;
