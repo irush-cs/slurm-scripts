@@ -1089,7 +1089,7 @@ sub set_cluster {
                         };
     }
 
-    return if $unset;
+    return 1 if $unset;
 
     my $config = get_config();
     my $oldname = $config->{ClusterName};
@@ -1148,7 +1148,7 @@ sub set_cluster {
     }
 
     my $newconfig = get_config();
-    return $newconfig and $newconfig->{ClusterName} ne $cluster;
+    return ($newconfig and ($newconfig->{ClusterName} eq $cluster)) ? 1 : 0;
 }
 
 1;
