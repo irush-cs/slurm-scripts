@@ -886,7 +886,7 @@ sub get_config {
             # ignore
         } elsif ($line =~ m/^\s*$/) {
             # ignore
-        } elsif ($line =~ m@^Slurmctld\(primary(?:/backup)?\) at .*? (is|are) (UP|DOWN)(?:/(UP|DOWN))?@) {
+        } elsif ($line =~ m@^Slurmctld\((?:primary(?:/backup)?|backup)\) at .*? (is|are) (UP|DOWN)(?:/(UP|DOWN))?@) {
             # ignore
         } elsif ($line eq "Cgroup Support Configuration:") {
             $cgroup = {};
