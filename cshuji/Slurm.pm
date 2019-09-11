@@ -840,6 +840,10 @@ is specified, "-M $cluster" is added.
 If I<errors> is given, will contain any errors. Otherwise errors will be printed
 to stderr.
 
+If the `scontrol show config` returns the "Cgroup Support Configuration"
+section (version 19.05), it is returned in a "_CgroupSupportConfiguration" hash
+in the results.
+
 =cut
 
 sub get_config {
@@ -868,17 +872,24 @@ sub get_config {
     }
 
     chomp(@lines);
+    my $cgroup;
     foreach my $line (@lines) {
         if ($line =~ m/^\s*([^\s]+?)\s*=\s*([^\s].*)?\s*?/) {
             my ($key, $value) = ($1, $2);
             $value //= "";
-            $config->{$key} = $value;
+            if ($cgroup) {
+                $cgroup->{$key} = $value;
+            } else {
+                $config->{$key} = $value;
+            }
         } elsif ($line =~ m/^Configuration data as of \d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d$/) {
             # ignore
         } elsif ($line =~ m/^\s*$/) {
             # ignore
-        } elsif ($line =~ m@^Slurmctld\(primary/backup\) at .*? are (UP|DOWN)/(UP|DOWN)@) {
+        } elsif ($line =~ m@^Slurmctld\(primary(?:/backup)?\) at .*? (is|are) (UP|DOWN)(?:/(UP|DOWN))?@) {
             # ignore
+        } elsif ($line eq "Cgroup Support Configuration:") {
+            $cgroup = {};
         } else {
             if ($errors) {
                 push @$errors, "Bad line from show config: $line\n";
@@ -886,6 +897,10 @@ sub get_config {
                 print STDERR "Bad line from show config: $line\n";
             }
         }
+    }
+
+    if ($cgroup) {
+        $config->{_CgroupSupportConfiguration} = $cgroup;
     }
 
     return $config;
