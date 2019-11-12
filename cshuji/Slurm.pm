@@ -324,7 +324,7 @@ sub nodes2array {
         }
 
         # comma before bracket
-        if ($arg =~ m/^([^[]*),(.*)$/) {
+        if ($arg =~ m/^([^[]*?),(.*)$/) {
             my $node = $1;
             $arg = $2;
             $nodes{$node} = $node;
