@@ -205,7 +205,7 @@ sub parse_list {
 
 Splits a gres string ($gres) to a hash ($results) for gres keys to values.
 
-no_consume and types are currently ignored.
+no_consume, types, and socket bindings are currently ignored.
 
 If $prev is specified, the results will contained both gres's
 combined. Numerical values will be summed; Memory suffixes will be handled
@@ -228,6 +228,9 @@ sub split_gres {
     my $gres = shift || {};
     my $sep = ":";
 
+    # for now, ignore socket binding
+    $input =~ s/\(S:[-\d]+?\)//g;
+
     my $gsep = index($input, ":");
     my $tsep = index($input, "=");
     if ($tsep > 0 and ($tsep < $gsep or $gsep < 0)) {
@@ -237,6 +240,10 @@ sub split_gres {
     $gres = {%$gres};
 
     foreach my $g (split /,/, $input) {
+        # ignore no_consume
+        $g =~ s/:no_consume:/:/;
+        $g =~ s/:no_consume$//;
+
         $g = "$g${sep}1" if index($g, $sep) < 0 or $g !~ m/${sep}\d/;
         my ($t, $v, $r) = split /\Q${sep}\E/, $g;
         $v = $r if ($v !~ m/^\d/ and $r and $r =~ m/^\d/);

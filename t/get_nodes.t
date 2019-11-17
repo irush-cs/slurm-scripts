@@ -68,6 +68,26 @@ NodeName=oxygen-04 Arch=x86_64 CoresPerSocket=12
    CurrentWatts=0 LowestJoules=0 ConsumedJoules=0
    ExtSensorsJoules=n/s ExtSensorsWatts=0 ExtSensorsTemp=n/s
    Reason=memory issues? [root@2019-01-29T10:42:12]
+
+NodeName=cricket Arch=x86_64 CoresPerSocket=4 
+   CPUAlloc=0 CPUTot=8 CPULoad=0.02
+   AvailableFeatures=cricket
+   ActiveFeatures=cricket
+   Gres=gpu:quadro:1(S:0),vmem:2G
+   GresDrain=N/A
+   GresUsed=gpu:quadro:0(IDX:N/A),vmem:0
+   NodeAddr=cricket NodeHostName=cricket 
+   OS=Linux 4.14.138-aufs-1 #1 SMP Tue Aug 13 16:21:39 IDT 2019 
+   RealMemory=7907 AllocMem=0 FreeMem=4608 Sockets=1 Boards=1
+   MemSpecLimit=1024
+   State=IDLE ThreadsPerCore=2 TmpDisk=47932 Weight=3 Owner=N/A MCS_label=N/A
+   Partitions=short,long,debug,other,allowed,deny 
+   BootTime=2019-11-06T16:17:37 SlurmdStartTime=2019-11-17T07:39:50
+   CfgTRES=cpu=8,mem=7907M,billing=8,gres/gpu=1
+   AllocTRES=
+   CapWatts=n/a
+   CurrentWatts=0 AveWatts=0
+   ExtSensorsJoules=n/s ExtSensorsWatts=0 ExtSensorsTemp=n/s
 ";
 
 
@@ -200,6 +220,46 @@ my %nodes = ("cortex-01" => {"NodeName" => "cortex-01",
                              "ExtSensorsTemp" => "n/s",
                              "Reason" => "memory issues? [root@2019-01-29T10:42:12]",
                             },
+
+             "cricket" => {"NodeName" => "cricket",
+                           "Arch" => "x86_64",
+                           "CoresPerSocket" => "4",
+                           "CPUAlloc" => "0",
+                           "CPUTot" => "8",
+                           "CPULoad" => "0.02",
+                           "AvailableFeatures" => "cricket",
+                           "ActiveFeatures" => "cricket",
+                           "Gres" => "gpu:quadro:1(S:0),vmem:2G",
+                           "_Gres" => {"vmem" => "2048M", gpu => "1"},
+                           "GresDrain" => "N/A",
+                           "GresUsed" => "gpu:quadro:0(IDX:N/A),vmem:0",
+                           "NodeAddr" => "cricket",
+                           "NodeHostName" => "cricket",
+                           "OS" => "Linux 4.14.138-aufs-1 #1 SMP Tue Aug 13 16:21:39 IDT 2019",
+                           "RealMemory" => "7907",
+                           "AllocMem" => "0",
+                           "FreeMem" => "4608",
+                           "Sockets" => "1",
+                           "Boards" => "1",
+                           "MemSpecLimit" => "1024",
+                           "State" => "IDLE",
+                           "ThreadsPerCore" => "2",
+                           "TmpDisk" => "47932",
+                           "Weight" => "3",
+                           "Owner" => "N/A",
+                           "MCS_label" => "N/A",
+                           "Partitions" => "short,long,debug,other,allowed,deny",
+                           "BootTime" => "2019-11-06T16:17:37",
+                           "SlurmdStartTime" => "2019-11-17T07:39:50",
+                           "CfgTRES" => "cpu=8,mem=7907M,billing=8,gres/gpu=1",
+                           "AllocTRES" => "",
+                           "CapWatts" => "n/a",
+                           "CurrentWatts" => "0",
+                           "AveWatts" => "0",
+                           "ExtSensorsJoules" => "n/s",
+                           "ExtSensorsWatts" => "0",
+                           "ExtSensorsTemp" => "n/s",
+                          },
             );
 
 my $results = get_nodes(_scontrol_output => [split /\n/, $nodes]);

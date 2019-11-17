@@ -15,8 +15,10 @@ my %gres = ("gpu,gpu:2" => {gpu => 3},
             "gpu:black:3" => {gpu => 3},
             "gpu:m60" => {gpu => 1},
             "gpu:m60:8" => {gpu => 8},
+            "vmem:no_consume:2G" => {vmem => "2048M"},
+            "gpu:m60:no_consume:2" => {gpu => 2},
            );
-my $allgres = {gpu => 20, mem => "15363M"};
+my $allgres = {gpu => 22, mem => "15363M", vmem => "2048M"};
 
 my %tres = (
             "cpu=1,mem=2G,node=1,billing=1,gres/gpu=1" => {cpu => 1, mem => "2048M", node => 1, billing => 1, "gres/gpu" => 1},
