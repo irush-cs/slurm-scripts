@@ -27,6 +27,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_clusters
                     set_cluster
                     get_nodes
+                    get_reservations
                     get_accounts
                     get_associations
                     parse_conf
@@ -739,6 +740,47 @@ sub get_nodes {
     }
 
     return $nodes;
+}
+
+
+=head2 get_reservations
+
+ $results = get_reservations()
+
+Get reservations hash ref by calling "scontrol show reservations -dd". Uses the
+I<parse_scontrol_show>.
+
+In addition to the normal values, the following calculated values are also
+available:
+
+=over
+
+=over
+
+=item _NodeList   - Array of nodes from NodeList
+
+=back
+
+=back
+
+=cut
+
+sub get_reservations {
+    my %args = @_;
+    my $reservations;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_scontrol_output}) {
+        $reservations = parse_scontrol_show($args{_scontrol_output});
+    } else {
+        $reservations = parse_scontrol_show([`scontrol show reservations -dd | grep -v '^No reservations in the system\$'`]);
+    }
+
+    foreach my $reservation (values %$reservations) {
+        $reservation->{_NodeList} = [nodes2array($reservation->{Nodes})];
+    }
+
+    return $reservations;
 }
 
 =head2 parse_conf
