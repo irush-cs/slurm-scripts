@@ -333,6 +333,23 @@ sub nodes2array {
             next;
         }
 
+        # comma after balanced brackets
+        my $comma = undef;
+        my $bcount = 0;
+        foreach my $i (0 .. length($arg)-1) {
+            my $c = substr($arg, $i, 1);
+            if ($c eq '[') {$bcount++}
+            elsif ($c eq ']') {$bcount--}
+            elsif ($c eq ',') {
+                if ($bcount == 0) {
+                    unshift @input, substr($arg, $i + 1);
+                    $arg = substr($arg, 0, $i);
+                    last;
+                }
+            }
+            $bcount = 0 if ($bcount < 0);
+        }
+
         # brackets
         my @ranges;
         while ($arg =~ m/(.*)\[([\d,-]+)\](.*)/) {
