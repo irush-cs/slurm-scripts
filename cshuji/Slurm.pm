@@ -455,6 +455,10 @@ Also, the job hash contains the following additional values
 
 =item _NodeList   - Array of nodes from NodeList
 
+=item _UserName   - The login (string part of UserId)
+
+=item _UID        - The uid (\d+ part of UserId)
+
 =back
 
 =back
@@ -520,6 +524,11 @@ sub get_jobs {
             $job->{_NodeList} = [];
         } else {
             $job->{_NodeList} = [nodes2array($job->{NodeList})];
+        }
+
+        if ($job->{UserId} =~ m/^([^\(]+)\((\d+)\)$/) {
+            $job->{_UserName} = $1;
+            $job->{_UID} = $2;
         }
     }
 
