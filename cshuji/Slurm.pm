@@ -411,7 +411,7 @@ I<parse_scontrol_show> function so _DETAILS are available with the following ite
 
 =item CPU_IDs
 
-=item GRES_IDX
+=item GRES_IDX (or GRES after 19.05)
 
 =item Mem
 
@@ -435,7 +435,7 @@ In addition, the following calculated values are also available per detail:
 
 =item _CPUs       - Array of CPU IDs
 
-=item _GRES       - Hash of GRES from GRES_IDX
+=item _GRES       - Hash of GRES from GRES_IDX (or GRES after 19.05)
 
 =item _GRESs      - Hash of GRES with the gres IDX (like _CPUs)
 
@@ -498,8 +498,10 @@ sub get_jobs {
             # gres per detail
             $detail->{_GRES} = {};
             $detail->{_GRESs} = {};
-            if ($detail->{GRES_IDX}) {
-                foreach my $gres ($detail->{GRES_IDX} =~ m/([^(]+?\(IDX:[-\d,]+\),?)/g) {
+
+            my $greskey = (exists $detail->{GRES} and not exists $detail->{GRES_IDX}) ? "GRES" : "GRES_IDX";
+            if ($detail->{$greskey}) {
+                foreach my $gres ($detail->{$greskey} =~ m/([^(]+?\(IDX:[-\d,]+\),?)/g) {
                     $gres =~ s/,$//;
                     my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(IDX:([\d\-,]+)\)/;
                     $detail->{_GRES}{$name} //= 0;

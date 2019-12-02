@@ -127,6 +127,36 @@ JobId=134238037 JobName=wrap
    StdOut=/some/location/out
    Power=
 
+JobId=2423559 ArrayJobId=2423430 ArrayTaskId=72 ArrayTaskThrottle=20 JobName=tsn
+   UserId=user4(400) GroupId=group4(404) MCS_label=N/A
+   Priority=1409292 Nice=0 Account=account4 QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=0 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   DerivedExitCode=0:0
+   RunTime=00:02:29 TimeLimit=2-00:00:00 TimeMin=N/A
+   SubmitTime=2019-12-02T14:47:13 EligibleTime=2019-12-02T15:28:10
+   AccrueTime=Unknown
+   StartTime=2019-12-02T15:28:10 EndTime=2019-12-04T15:28:10 Deadline=N/A
+   PreemptEligibleTime=2019-12-02T15:28:10 PreemptTime=None
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2019-12-02T15:28:10
+   Partition=short AllocNode:Sid=e-phoenix-gw.cs.huji.ac.il:21453
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=cortex-08
+   BatchHost=cortex-08
+   NumNodes=1 NumCPUs=1 NumTasks=1 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=1,mem=8G,node=1,billing=1,gres/gpu=1
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+     Nodes=cortex-08 CPU_IDs=20 Mem=8192 GRES=gpu(IDX:5)
+   MinCPUsNode=1 MinMemoryNode=8G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=tsn
+   WorkDir=/tsn/logs
+   StdErr=/tsn/logs/out
+   StdIn=/dev/null
+   StdOut=/tsn/logs/out
+   Power=
+   TresPerNode=gpu:1
 ";
 
 my %jobs = (1 => {"JobId" => "1",
@@ -415,6 +445,79 @@ my %jobs = (1 => {"JobId" => "1",
                             "_DETAILS" => [],
                            },
 
+            "2423559" => {
+                          "JobId" => "2423559",
+                          "ArrayJobId" => "2423430",
+                          "ArrayTaskId" => "72",
+                          "ArrayTaskThrottle" => "20",
+                          "JobName" => "tsn",
+                          "UserId" => "user4(400)",
+                          "_UserName" => "user4",
+                          "_UID" => "400",
+                          "GroupId" => "group4(404)",
+                          "MCS_label" => "N/A",
+                          "Priority" => "1409292",
+                          "Nice" => "0",
+                          "Account" => "account4",
+                          "QOS" => "normal",
+                          "JobState" => "RUNNING",
+                          "Reason" => "None",
+                          "Dependency" => "(null)",
+                          "Requeue" => "0",
+                          "Restarts" => "0",
+                          "BatchFlag" => "1",
+                          "Reboot" => "0",
+                          "ExitCode" => "0:0",
+                          "DerivedExitCode" => "0:0",
+                          "RunTime" => "00:02:29",
+                          "TimeLimit" => "2-00:00:00",
+                          "TimeMin" => "N/A",
+                          "SubmitTime" => "2019-12-02T14:47:13",
+                          "EligibleTime" => "2019-12-02T15:28:10",
+                          "AccrueTime" => "Unknown",
+                          "StartTime" => "2019-12-02T15:28:10",
+                          "EndTime" => "2019-12-04T15:28:10",
+                          "Deadline" => "N/A",
+                          "PreemptEligibleTime" => "2019-12-02T15:28:10",
+                          "PreemptTime" => "None",
+                          "SuspendTime" => "None",
+                          "SecsPreSuspend" => "0",
+                          "LastSchedEval" => "2019-12-02T15:28:10",
+                          "Partition" => "short",
+                          "AllocNode:Sid" => "e-phoenix-gw.cs.huji.ac.il:21453",
+                          "ReqNodeList" => "(null)",
+                          "ExcNodeList" => "(null)",
+                          "NodeList" => "cortex-08",
+                          "_NodeList" => ["cortex-08"],
+                          "BatchHost" => "cortex-08",
+                          "NumNodes" => "1",
+                          "NumCPUs" => "1",
+                          "NumTasks" => "1",
+                          "CPUs/Task" => "1",
+                          "ReqB:S:C:T" => "0:0:*:*",
+                          "TRES" => "cpu=1,mem=8G,node=1,billing=1,gres/gpu=1",
+                          "_TRES" => {"cpu" => 1, node => "1", "billing" => 1, "gres/gpu" => 1, mem => "8192M"},
+                          "Socks/Node" => "*",
+                          "NtasksPerN:B:S:C" => "0:0:*:*",
+                          "CoreSpec" => "*",
+                          "MinCPUsNode" => "1",
+                          "MinMemoryNode" => "8G",
+                          "MinTmpDiskNode" => "0",
+                          "Features" => "(null)",
+                          "DelayBoot" => "00:00:00",
+                          "OverSubscribe" => "OK",
+                          "Contiguous" => "0",
+                          "Licenses" => "(null)",
+                          "Network" => "(null)",
+                          "Command" => "tsn",
+                          "WorkDir" => "/tsn/logs",
+                          "StdErr" => "/tsn/logs/out",
+                          "StdIn" => "/dev/null",
+                          "StdOut" => "/tsn/logs/out",
+                          "Power" => "",
+                          "TresPerNode" => "gpu:1",
+                          "_DETAILS" => [{_JobId => 2423559, _NodeList => ["cortex-08"], _CPUs => [20], GRES => "gpu(IDX:5)", CPU_IDs => 20, _nCPUs => 1, "Nodes" => "cortex-08", "Mem" => 8192, _EndTime => "2019-12-04T15:28:10", _GRES => {gpu => 1}, _GRESs => {gpu => [5]}}],
+                         },
            );
 
 my $results = get_jobs(_scontrol_output => [split /\n/, $jobs]);
