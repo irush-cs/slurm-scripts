@@ -20,6 +20,7 @@ our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(parse_scontrol_show
                     parse_list
                     split_gres
+                    gres2string
                     nodecmp
                     nodes2array
                     get_config
@@ -267,6 +268,34 @@ sub split_gres {
     }
 
     return $gres;
+}
+
+
+=head2 gres2string
+
+ $results = gres2string($gres)
+
+Converts a gres hash (as returned from split_gres) back to string.
+
+Examples:
+
+  gres2string({gpu => 2, mem => "3M"})    -> "gpu:2,mem:3M"
+  gres2string({gpu => 3})                 -> "gpu,gpu:2"
+  gres2string({gpu => 5, mem => "2050M"}) -> "gpu:2,mem:2M", "gpu:3,mem:2G"
+  gres2string({"gres/gpu" => 3})          -> "gres/gpu:3"
+
+=cut
+
+sub gres2string {
+    my $input = shift;
+    my @outputs;
+    my $sep = ":";
+
+    foreach my $key (sort keys %$input) {
+        push @outputs, $key.$sep.$input->{$key};
+    }
+
+    return join(",", @outputs);
 }
 
 =head2 nodecmp
