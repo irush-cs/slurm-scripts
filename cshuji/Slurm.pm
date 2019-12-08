@@ -470,6 +470,8 @@ In addition, the following calculated values are also available per detail:
 
 =item _NodeList   - Array of nodes from Nodes
 
+=item _GRES_IDX   - The value of GRES_IDX prior to 19.05, and of GRES otherwise
+
 =back
 
 =back
@@ -529,7 +531,7 @@ sub get_jobs {
             $detail->{_GRESs} = {};
 
             my $greskey = (exists $detail->{GRES} and not exists $detail->{GRES_IDX}) ? "GRES" : "GRES_IDX";
-            if ($detail->{$greskey}) {
+            if (exists $detail->{$greskey}) {
                 foreach my $gres ($detail->{$greskey} =~ m/([^(]+?\(IDX:[-\d,]+\),?)/g) {
                     $gres =~ s/,$//;
                     my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(IDX:([\d\-,]+)\)/;
@@ -545,6 +547,7 @@ sub get_jobs {
                         }
                     }
                 }
+                $detail->{_GRES_IDX} = $detail->{$greskey};
             }
 
             $detail->{_NodeList} = [nodes2array($detail->{Nodes})];
