@@ -81,7 +81,7 @@ if [[ $? != 0 || -n "$out" ]]; then
         (echo "Healthcheck issues ($out), draining $node";
          echo;
          echo "Running processes:";
-         ssqueue -w $node;
+         squeue -o "%.18i %.11P %.8j %.8u %.8a %.8T %.10V %.12M %.12l %.6D %.4C %.10m %.7b %13W %R" "$@" -w $node;
          echo;
          echo "To recheck run:";
          echo "root@$node# $0") | mail -s "Draining node $node (HC: $out)" ${maintainers} > /dev/null 2>&1
