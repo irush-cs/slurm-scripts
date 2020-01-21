@@ -456,21 +456,23 @@ In addition, the following calculated values are also available per detail:
 
 =over
 
-=item _JobId      - The job's JobId
+=item _JobId         - The job's JobId
 
-=item _EndTime    - The job's EndTime
+=item _EndTime       - The job's EndTime
 
-=item _nCPUs      - Totol number of CPUs from CPU_IDs
+=item _nCPUs         - Totol number of CPUs from CPU_IDs
 
-=item _CPUs       - Array of CPU IDs
+=item _CPUs          - Array of CPU IDs
 
-=item _GRES       - Hash of GRES from GRES_IDX (or GRES after 19.05)
+=item _GRES          - Hash of GRES from GRES_IDX (or GRES after 19.05)
 
-=item _GRESs      - Hash of GRES with the gres IDX (like _CPUs)
+=item _GRESs         - Hash of GRES with the gres IDX (like _CPUs)
 
-=item _NodeList   - Array of nodes from Nodes
+=item _NodeList      - Array of nodes from Nodes
 
-=item _GRES_IDX   - The value of GRES_IDX prior to 19.05, and of GRES otherwise
+=item _SchedNodeList - Array of nodes from SchedNodeList (only if SchedNodeList is present)
+
+=item _GRES_IDX       - The value of GRES_IDX prior to 19.05, and of GRES otherwise
 
 =back
 
@@ -558,6 +560,14 @@ sub get_jobs {
             $job->{_NodeList} = [];
         } else {
             $job->{_NodeList} = [nodes2array($job->{NodeList})];
+        }
+
+        if ($job->{SchedNodeList}) {
+            if ($job->{SchedNodeList} ne "(null)") {
+                $job->{_SchedNodeList} = [nodes2array($job->{SchedNodeList})];
+            } else {
+                $job->{_SchedNodeList} = []
+            }
         }
 
         if ($job->{UserId} =~ m/^([^\(]+)\((\d+)\)$/) {

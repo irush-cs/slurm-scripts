@@ -157,6 +157,35 @@ JobId=2423559 ArrayJobId=2423430 ArrayTaskId=72 ArrayTaskThrottle=20 JobName=tsn
    StdOut=/tsn/logs/out
    Power=
    TresPerNode=gpu:1
+
+JobId=20547 JobName=test
+   UserId=user5(500) GroupId=group5(505) MCS_label=N/A
+   Priority=105882 Nice=0 Account=account5 QOS=normal
+   JobState=PENDING Reason=PartitionConfig Dependency=(null)
+   Requeue=0 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   DerivedExitCode=0:0
+   RunTime=00:00:00 TimeLimit=00:10:00 TimeMin=N/A
+   SubmitTime=2020-01-21T12:12:46 EligibleTime=2020-01-21T12:12:46
+   AccrueTime=2020-01-21T12:12:46
+   StartTime=2020-01-21T12:22:42 EndTime=2020-01-21T12:32:42 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2020-01-21T12:15:09
+   Partition=short,long,other AllocNode:Sid=newt.cs.huji.ac.il:25104
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=(null) SchedNodeList=doppelganger,dune3
+   NumNodes=2-2 NumCPUs=2 NumTasks=2 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=2,mem=100M,node=2,billing=2
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=1 MinMemoryCPU=50M MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   ClusterFeatures=c-f1
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=(null)
+   WorkDir=/work/dir/1
+   StdErr=/std/err2
+   StdIn=/dev/null
+   StdOut=/std/out3
+   Power=
+
 ";
 
 my %jobs = (1 => {"JobId" => "1",
@@ -518,6 +547,76 @@ my %jobs = (1 => {"JobId" => "1",
                           "TresPerNode" => "gpu:1",
                           "_DETAILS" => [{_JobId => 2423559, _NodeList => ["cortex-08"], _CPUs => [20], GRES => "gpu(IDX:5)", _GRES_IDX => "gpu(IDX:5)", CPU_IDs => 20, _nCPUs => 1, "Nodes" => "cortex-08", "Mem" => 8192, _EndTime => "2019-12-04T15:28:10", _GRES => {gpu => 1}, _GRESs => {gpu => [5]}}],
                          },
+
+            "20547" => {
+                        "JobId" => "20547",
+                        "JobName" => "test",
+                        "UserId" => "user5(500)",
+                        "_UID" => "500",
+                        "_UserName" => "user5",
+                        "GroupId" => "group5(505)",
+                        "MCS_label" => "N/A",
+                        "Priority" => "105882",
+                        "Nice" => "0",
+                        "Account" => "account5",
+                        "QOS" => "normal",
+                        "JobState" => "PENDING",
+                        "Reason" => "PartitionConfig",
+                        "Dependency" => "(null)",
+                        "Requeue" => "0",
+                        "Restarts" => "0",
+                        "BatchFlag" => "1",
+                        "Reboot" => "0",
+                        "ExitCode" => "0:0",
+                        "DerivedExitCode" => "0:0",
+                        "RunTime" => "00:00:00",
+                        "TimeLimit" => "00:10:00",
+                        "TimeMin" => "N/A",
+                        "SubmitTime" => "2020-01-21T12:12:46",
+                        "EligibleTime" => "2020-01-21T12:12:46",
+                        "AccrueTime" => "2020-01-21T12:12:46",
+                        "StartTime" => "2020-01-21T12:22:42",
+                        "EndTime" => "2020-01-21T12:32:42",
+                        "Deadline" => "N/A",
+                        "SuspendTime" => "None",
+                        "SecsPreSuspend" => "0",
+                        "LastSchedEval" => "2020-01-21T12:15:09",
+                        "Partition" => "short,long,other",
+                        "AllocNode:Sid" => "newt.cs.huji.ac.il:25104",
+                        "ReqNodeList" => "(null)",
+                        "ExcNodeList" => "(null)",
+                        "NodeList" => "(null)",
+                        "_NodeList" => [],
+                        "SchedNodeList" => "doppelganger,dune3",
+                        "_SchedNodeList" => ["doppelganger", "dune3"],
+                        "NumNodes" => "2-2",
+                        "NumCPUs" => "2",
+                        "NumTasks" => "2",
+                        "CPUs/Task" => "1",
+                        "ReqB:S:C:T" => "0:0:*:*",
+                        "TRES" => "cpu=2,mem=100M,node=2,billing=2",
+                        "_TRES" => {cpu => 2, mem => "100M", node => 2, billing => 2},
+                        "Socks/Node" => "*",
+                        "NtasksPerN:B:S:C" => "0:0:*:*",
+                        "CoreSpec" => "*",
+                        "MinCPUsNode" => "1",
+                        "MinMemoryCPU" => "50M",
+                        "MinTmpDiskNode" => "0",
+                        "Features" => "(null)",
+                        "DelayBoot" => "00:00:00",
+                        "ClusterFeatures" => "c-f1",
+                        "OverSubscribe" => "OK",
+                        "Contiguous" => "0",
+                        "Licenses" => "(null)",
+                        "Network" => "(null)",
+                        "Command" => "(null)",
+                        "WorkDir" => "/work/dir/1",
+                        "StdErr" => "/std/err2",
+                        "StdIn" => "/dev/null",
+                        "StdOut" => "/std/out3",
+                        "Power" => "",
+                        "_DETAILS" => [],
+                       }
            );
 
 my $results = get_jobs(_scontrol_output => [split /\n/, $jobs]);
