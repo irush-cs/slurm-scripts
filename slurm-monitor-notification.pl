@@ -147,7 +147,9 @@ if ($job->{memory}{notify}) {
 }
 
 if ($job->{shortjobnotify}) {
-    $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is $job->{runtimepercent}% of the requested time.\n";
+    $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is $job->{runtimepercent}% of the requested time.
+Requesting more time than needed can drastically delay the starting time of your and others jobs.
+";
 }
 
 if ($body) {

@@ -350,6 +350,7 @@ while (1) {
     gpu_utilization() if $havegpus;
     memory_utilization();
     cpu_utilization();
+    runtime_utilization();
 
     foreach my $job (values %stats) {
         unless ($states{all}{$job->{state}} ){
@@ -366,9 +367,9 @@ exit 0;
 # get_new_jobs
 ################################################################################
 sub get_new_jobs {
-    # clean old state (to capture missing jobs)
+    # mark old jobs to capture missing jobs.
     foreach my $old (values %stats) {
-        delete $old->{state};
+        $old->{old} = 1;
     }
     my $stamp = time;
     my $jobs = cshuji::Slurm::get_jobs();
@@ -395,11 +396,12 @@ sub get_new_jobs {
                 $cpus = {map {$_ => {}} @$cpus};
                 # slurm has weird cpu mapping, so we'll make it later from cgroup
                 my $jobstat = {jobid => $job->{JobId},
-                               uid => $job->{UserId} =~ m/\((.*)\)/,
-                               login => $job->{UserId} =~ m/^([^(]*)\(/,
-                               cpus   => {                  samples => 0, count => scalar(keys %$cpus), gooduse => 0, baduse => 0},
-                               gpus   => {data => {%$gpus}, samples => 0, count => scalar(keys %$gpus), gooduse => 0, baduse => 0},
-                               memory => {                  samples => 0, count => $mem},
+                               uid     => $job->{UserId} =~ m/\((.*)\)/,
+                               login   => $job->{UserId} =~ m/^([^(]*)\(/,
+                               cpus    => {                  samples => 0, count => scalar(keys %$cpus), gooduse => 0, baduse => 0},
+                               gpus    => {data => {%$gpus}, samples => 0, count => scalar(keys %$gpus), gooduse => 0, baduse => 0},
+                               memory  => {                  samples => 0, count => $mem},
+                               running => {                  samples => 0},
                               };
                 $jobstat->{gpus}{usage} = {map {$_ => 0} (0 .. scalar(keys %$gpus))};
                 $jobstat->{cpus}{usage} = {map {$_ => 0} (0 .. scalar(keys %$cpus))};
@@ -458,6 +460,7 @@ sub get_new_jobs {
             $stats{$job->{JobId}}{starttime} = $job->{StartTime};
             $stats{$job->{JobId}}{endtime} = $job->{EndTime};
             $stats{$job->{JobId}}{submittime} = $job->{SubmitTime};
+            $stats{$job->{JobId}}{old} = 0;
         }
     }
 
@@ -494,7 +497,7 @@ sub get_new_jobs {
 # clean_old
 ################################################################################
 sub clean_old {
-    my @old = map {$_->{jobid}} grep {not exists $_->{state} or $states{report}{$_->{state}}} values %stats;
+    my @old = map {$_->{jobid}} grep {$states{report}{$_->{state}}} values %stats;
     foreach my $old (@old) {
         my $job = $stats{$old};
         delete $stats{$old};
@@ -546,9 +549,11 @@ sub clean_old {
             }
 
             my $runtimepercent = (100 * ($runtime / $timelimit));
-            if ($job->{state} and $job->{state} eq "COMPLETED" and
-                $runtimepercent < $shortjobpercent and
-                $job->{notifyshortjob}) {
+            if ($job->{state} and ($job->{state} eq "COMPLETED")
+                and $runtimepercent < $shortjobpercent
+                and $job->{notifyshortjob}
+                and $job->{running}{samples} >= $minsamples
+               ) {
                 $notify = 1;
                 $job->{runtimepercent} = round($runtimepercent);
                 $job->{shortjobpercent} = $shortjobpercent;
@@ -781,5 +786,19 @@ sub memory_utilization {
         if ($notifyhistory{memory}) {
             push @{$job->{memory}{history}}, [$stamp, $usage];
         }
+    }
+}
+
+################################################################################
+# runtime_utilization
+################################################################################
+sub runtime_utilization {
+    # we're only doing this to avoid notify twice about runtime of a job. As
+    # reastarting the monitor deamon will show COMPLETED jobs for a while, we
+    # want to make sure we've sampled them while RUNNING.
+    foreach my $job (values %stats) {
+        next unless $states{sample}{$job->{state}};
+        next unless $job->{state} eq "RUNNING";
+        $job->{running}{samples}++;
     }
 }
