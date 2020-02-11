@@ -183,6 +183,7 @@ Job data (on $job->{node}):
   StartTime:  $job->{starttime}
   EndTime:    $job->{endtime}
   RunTime:    $job->{runtime}
+  State:      $job->{state}
 
 Regards,
 Slurm Resource Monitor
