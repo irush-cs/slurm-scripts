@@ -227,8 +227,10 @@ Slurm Resource Monitor
                                                       },
                                         body => $html_body);
 
-    $html_part = Email::MIME->create(parts => [$html_part, @attachments]);
-    $html_part->content_type_set("multipart/related");
+    if (@attachments) {
+        $html_part = Email::MIME->create(parts => [$html_part, @attachments]);
+        $html_part->content_type_set("multipart/related");
+    }
 
     my $email = Email::MIME->create(
                                  header_str => [
