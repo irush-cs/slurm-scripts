@@ -518,7 +518,7 @@ sub clean_old {
                 $job->{$res}{baduse} = 0;
                 $job->{$res}{gooduse} = 0;
                 foreach my $count (keys %{$job->{$res}{usage}}) {
-                    if ($job->{$res}{count} - $count >= $job->{$res}{allowedunused}{count}) {
+                    if ($job->{$res}{count} - $count > $job->{$res}{allowedunused}{count}) {
                         $job->{$res}{baduse} += $job->{$res}{usage}{$count};
                     } else {
                         $job->{$res}{gooduse} += $job->{$res}{usage}{$count};

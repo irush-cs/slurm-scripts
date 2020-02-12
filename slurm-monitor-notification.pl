@@ -102,7 +102,7 @@ sub plot {
 foreach my $res (qw(cpus gpus)) {
     if ($job->{$res}{notify}) {
         my $badpercent = round(100 * $job->{$res}{baduse} / $job->{$res}{samples});
-        my $baduse = $job->{$res}{count} - $job->{$res}{allowedunused}{count} + 1;
+        my $baduse = $job->{$res}{count} - $job->{$res}{allowedunused}{count};
         my $betterpercent = 0.66 * $job->{$res}{allowedunused}{percent};
         my $betteruse = 0;
         my $psum = 0;
@@ -116,7 +116,8 @@ foreach my $res (qw(cpus gpus)) {
         }
 
         $body .= "<title>$res</title>\n";
-        $body .= "You have requested $job->{$res}{count} $res, but at least ${badpercent}\% of the time you used less than $baduse $res.\n";
+        my $atleast = $badpercent eq "100" ? "the entire" : "${badpercent}\% of the";
+        $body .= "You have requested $job->{$res}{count} $res, but ${atleast} time you used less than $baduse $res.\n";
         if ($betteruse > 0 and $betteruse < $job->{$res}{count}) {
             $body .= "You might get better timing if you request $betteruse $res.\n";
         }
