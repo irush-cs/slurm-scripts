@@ -115,6 +115,7 @@ foreach my $res (qw(cpus gpus)) {
             $table->add($count, "${percent}\%");
         }
 
+        $body .= "<title>$res</title>\n";
         $body .= "You have requested $job->{$res}{count} $res, but at least ${badpercent}\% of the time you used less than $baduse $res.\n";
         if ($betteruse > 0 and $betteruse < $job->{$res}{count}) {
             $body .= "You might get better timing if you request $betteruse $res.\n";
@@ -138,6 +139,7 @@ if ($job->{memory}{notify}) {
     my $betterpercent = (0.66 * $job->{memory}{allowedunused}{percent}) / 100;
     my $betteruse = int($job->{memory}{max_usage} + ($betterpercent * $job->{memory}{max_usage}) / (1 - $betterpercent));
 
+    $body .= "<title>memory</title>\n";
     $body .= "You have requested ".mb2string($job->{memory}{count}, space => 1)."B RAM, but your max usage was ".mb2string($job->{memory}{max_usage}, space => 1)."B (${badpercent}\%)\n";
     if ($betteruse > 10 and $betteruse < $job->{memory}{count} and $betteruse > $job->{memory}{max_usage}) {
         $body .= "You might get better timing if you request ".mb2string($betteruse, space => 1)."B.\n";
@@ -147,6 +149,7 @@ if ($job->{memory}{notify}) {
 }
 
 if ($job->{shortjobnotify}) {
+    $body .= "<title>time</title>\n";
     $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is $job->{runtimepercent}% of the requested time.
 Requesting more time than needed can drastically delay the starting time of your and others jobs.
 ";
@@ -160,6 +163,7 @@ Your job $job->{jobid} on $job->{node} ($job->{cluster}) was allocated more reso
 
 ".$body;
     $body .= "
+<title>options</title>
 Please adjust your future jobs parameters to ensure better utilization of the
 cluster and faster starting time of your and other's jobs.
 
@@ -212,6 +216,14 @@ Slurm Resource Monitor
         }
     }
 
+    my %title_map = (cpus => "CPUs", gpus => "GPUs", memory => "Memory", time => "Time", options => "Options");
+    foreach my $title ($body =~ m/<title>([^_]*?)<\/title>/g) {
+        my $html_title = '</pre><hr><h4>'.($title_map{$title} // $title).'</h4><pre style="font-family:monospace;">';
+        $html_body =~ s,<title>${title}</title>,$html_title,;
+        my $text_title = ("-" x 75)."\n".($title_map{$title} // $title)."\n".("-"x length($title));
+        $body =~ s,<title>${title}</title>,${text_title},ms;
+    }
+
     my $text_part = Email::MIME->create(
                                         attributes => {
                                                        content_type => 'text/plain',
@@ -244,7 +256,7 @@ Slurm Resource Monitor
                                  parts => [$text_part, $html_part],
                                 );
 
-    #print $email->as_string;
+    #print $email->as_string; exit 3;
     unless (Email::Sender::Simple->try_to_send($email)) {
         print STDERR "Error sending mail\n";
     }
