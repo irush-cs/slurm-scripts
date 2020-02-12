@@ -62,6 +62,7 @@ my $minmonitoredpercent = 75;
 my $runtimedir = $ENV{RUNTIME_DIRECTORY} // "/run/slurm-resource-monitor";
 my $notifyinteractive = 0;
 my $maxarraytaskid = 10;
+my $deletedata = 1;
 
 # current monitored jobs
 # jobid => {uid, login, jobid, state, cpus => {}, gpus => {}}
@@ -152,6 +153,7 @@ if (!GetOptions('v|verbose+' => \$verbose,
     exit 1;
 }
 $verbose = 1 if $debug;
+$deletedata = 0 if $debug;
 
 ################################################################################
 # get configuration
@@ -318,6 +320,8 @@ sub read_conf {
     _update_setting(\$shortjobpercent, $config->{shortjobpercent}, "percent", "ShortJobPercent");
 
     _update_setting(\$runtimedir, $config->{runtimedir}, "dir", "RuntimeDir");
+
+    _update_setting(\$deletedata, $config->{deletedata}, "bool", "DeleteData");
 
     unless (chdir($runtimedir)) {
         print STDERR "Can't chdir to $runtimedir: $!\n";
@@ -623,7 +627,7 @@ sub clean_old {
                 # child
                 local $SIG{CHLD} = 'DEFAULT';
                 my $exit = system($config->{notificationscript}, "$job->{runtimedir}/data");
-                remove_tree("$job->{runtimedir}") unless $debug;
+                remove_tree("$job->{runtimedir}") if $deletedata;
                 exit $exit >> 8;
             }
         }

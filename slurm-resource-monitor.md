@@ -244,6 +244,12 @@ Runtime directory where some data files will be saved for the notification
 script. Should be created before the daemon start. Defaults to the
 RUNTIME_DIRECTORY environment variable
 
+### DeleteData
+
+Whether or not to delete the data saved before mailing it (in
+`RuntimeDir`). The default is to delete on normal runs, and not to delete when
+running in debug (the `-d` flag).
+
 ### NotifyCPUGraph, NotifyGPUGraph, NotifyMemoryGraph
 
 Whether to save the entire sampling data of the CPU, GPU or memory usage or

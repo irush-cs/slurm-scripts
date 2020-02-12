@@ -86,6 +86,13 @@ MinSamples=10
 RuntimeDir=/run/slurm-resource-monitor
 
 #
+# Whether or not to delete the notification script's data after notifing (in
+# RuntimeDir). The default is to delete on normal runs, and not to delete when
+# running in debug (the -d flag).
+#
+DeleteData=Yes
+
+#
 # Whether to keep and report entire CPU or GPU load sampling data or just the
 # usage historgram.
 #
