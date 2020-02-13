@@ -4,8 +4,8 @@
 #
 #   healthcheck.sh
 #
-#   Copyright (C) 2018 Hebrew University of Jerusalem Israel, see
-#   LICENSE file.
+#   Copyright (C) 2018-2020 Hebrew University of Jerusalem Israel, see LICENSE
+#   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
 #

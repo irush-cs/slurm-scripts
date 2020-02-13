@@ -4,7 +4,7 @@
 #
 #   pam_slurm_save_cgroups.sh
 #
-#   Copyright (C) 2018-2019 Hebrew University of Jerusalem Israel, see LICENSE
+#   Copyright (C) 2018-2020 Hebrew University of Jerusalem Israel, see LICENSE
 #   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>

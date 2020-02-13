@@ -4,7 +4,7 @@ package cshuji::Slurm;
 #
 #   cshuji/Slurm.pm
 #
-#   Copyright (C) 2018-2019 Hebrew University of Jerusalem Israel, see LICENSE
+#   Copyright (C) 2018-2020 Hebrew University of Jerusalem Israel, see LICENSE
 #   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
@@ -1294,7 +1294,7 @@ Yair Yarom, E<lt>irush@cs.huji.ac.ilE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2018-2019 Hebrew University Of Jerusalem, Israel See the LICENSE
+Copyright (C) 2018-2020 Hebrew University Of Jerusalem, Israel See the LICENSE
 file.
 
 =cut
