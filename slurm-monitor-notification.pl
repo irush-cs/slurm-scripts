@@ -4,7 +4,8 @@
 #
 #   slurm-monitor-notification.pl
 #
-#   Copyright (C) 2019 Hebrew University of Jerusalem Israel, see LICENSE file.
+#   Copyright (C) 2019-2020 Hebrew University of Jerusalem Israel, see LICENSE
+#   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
 #
@@ -149,7 +150,7 @@ if ($job->{memory}{notify}) {
     plot($job, "memory");
 }
 
-if ($job->{shortjobnotify}) {
+if ($job->{unusedtimenotify}) {
     $body .= "<title>time</title>\n";
     $body .= "You have requested a time limit of $job->{timelimit} but the run time was $job->{runtime}, which is $job->{runtimepercent}% of the requested time.
 Requesting more time than needed can drastically delay the starting time of your and others jobs.
@@ -172,7 +173,7 @@ If you want to stop receiving these mails but continue wasting resources and
 time, you can add one or more of the following lines into
 ~/.slurm-resource-monitor:
 
-NotifyShortJob=No
+NotifyUnusedTime=No
 NotifyUnusedCPUs=No
 NotifyUnusedGPUs=No
 NotifyUnusedMemory=No

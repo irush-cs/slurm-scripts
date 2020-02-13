@@ -32,14 +32,14 @@ ConfUpdateCheckInterval=3600
 MinRunTime=1800
 
 #
-# Notify about short jobs if RunTime is less than TimeLimit by this percent
+# Notify about unused time if RunTime is less than TimeLimit by this percent
 #
-ShortJobPercent=15
+UnusedTimePercent=15
 
 #
 # Select what to notify. These can be overridden by ~/.slurm-resource-monitor.
 #
-NotifyShortJob=Yes
+NotifyUnusedTime=Yes
 NotifyUnusedCPUs=Yes
 NotifyUnusedGPUs=Yes
 NotifyUnusedMemory=Yes

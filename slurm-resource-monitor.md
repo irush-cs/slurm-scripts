@@ -134,7 +134,7 @@ is true.
 ### Timelimit
 
 When a job finishes with a `COMPLETED` state, if it uses less than
-`ShortJobPercent`, a notification is sent.
+`UnusedTimePercent`, a notification is sent.
 
 ## etc/slurm-resource-monitor.service
 
@@ -190,14 +190,15 @@ configuration file and reset the daemon's data.
 Jobs who's runtime is less than `MinRunTime` will not be reported. Also, jobs
 which were monitored less than `MinRunTime` will not be reported.
 
-### ShortJobPercent
+### UnusedTimePercent
 
-If a job was successfully finished after only `ShortJobPercent` of the time
+If a job was successfully finished after only `UnusedTimePercent` of the time
 which was allocated, a notification will be sent.
 
-### NotifyShortJob
+### NotifyUnusedTime
 
-Whether to notify on short jobs or not (boolean value). This can be set per
+Whether to notify on unused time or not (boolean value), i.e. requesting more
+time than needed (which hinders the backfill scheduler). This can be set per
 user in `~/.slurm-resource-monitor`.
 
 ### NotifyUnusedCPUs, NotifyUnusedGPUs, NotifyUnusedMemory

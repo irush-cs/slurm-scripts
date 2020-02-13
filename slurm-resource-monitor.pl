@@ -4,7 +4,8 @@
 #
 #   slurm-resource-monitor.pl
 #
-#   Copyright (C) 2019 Hebrew University of Jerusalem Israel, see LICENSE file.
+#   Copyright (C) 2019-2020 Hebrew University of Jerusalem Israel, see LICENSE
+#   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
 #
@@ -48,8 +49,8 @@ my $havegpus = 0;
 my $verbose = 0;
 my $debug = 0;
 my $minruntime = 60 * 30;
-my $shortjobpercent = 15;
-my $notifyshortjob = 1;
+my $unusedtimepercent = 15;
+my $notifyunusedtime = 1;
 my $forcenotify = 0;
 my %notifyunused = (cpus => 1,
                     gpus => 1,
@@ -284,7 +285,7 @@ sub read_conf {
         }
     }
 
-    _update_setting(\$notifyshortjob, $config->{notifyshortjob}, "bool", "NotifyShortJob");
+    _update_setting(\$notifyunusedtime, $config->{notifyunusedtime}, "bool", "NotifyUnusedTime");
     _update_setting(\$notifyunused{cpus}, $config->{notifyunusedcpus}, "bool", "NotifyUnusedCPUs");
     _update_setting(\$notifyunused{gpus}, $config->{notifyunusedgpus}, "bool", "NotifyUnusedGPUs");
     _update_setting(\$notifyunused{memory}, $config->{notifyunusedmemory}, "bool", "NotifyUnusedMemory");
@@ -319,7 +320,7 @@ sub read_conf {
 
     _update_setting(\$minruntime, $config->{minruntime}, "int", "MinRunTime");
 
-    _update_setting(\$shortjobpercent, $config->{shortjobpercent}, "percent", "ShortJobPercent");
+    _update_setting(\$unusedtimepercent, $config->{unusedtimepercent}, "percent", "UnusedTimePercent");
 
     _update_setting(\$runtimedir, $config->{runtimedir}, "dir", "RuntimeDir");
 
@@ -422,7 +423,7 @@ sub get_new_jobs {
                     print "No readable user config $uconfig\n" if $verbose;
                     $uconfig = {};
                 }
-                $uconfig->{notifyshortjob} = to_bool($uconfig->{notifyshortjob}, $notifyshortjob);
+                $uconfig->{notifyunusedtime} = to_bool($uconfig->{notifyunusedtime}, $notifyunusedtime);
                 $uconfig->{notifyunusedgpus} = to_bool($uconfig->{notifyunusedgpus}, $notifyunused{gpus});
                 $uconfig->{notifyunusedcpus} = to_bool($uconfig->{notifyunusedcpus}, $notifyunused{cpus});
                 $uconfig->{notifyunusedmemory} = to_bool($uconfig->{notifyunusedmemory}, $notifyunused{memory});
@@ -436,7 +437,7 @@ sub get_new_jobs {
                 $uconfig->{maxignoreunusedmemory} = to_int($uconfig->{maxignoreunusedmemory}, $allowedunused{memory}{ignore});
                 $uconfig->{forcenotify} = to_bool($uconfig->{forcenotify}, $forcenotify);
 
-                $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
+                $jobstat->{notifyunusedtime} = $uconfig->{notifyunusedtime};
                 $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
                 $jobstat->{cpus}{notifyunused} = $uconfig->{notifyunusedcpus};
                 $jobstat->{memory}{notifyunused} = $uconfig->{notifyunusedmemory};
@@ -561,14 +562,14 @@ sub clean_old {
             my $runtimepercent = (100 * ($runtime / $timelimit));
             if ($job->{forcenotify} or
                 ($job->{state} and ($job->{state} eq "COMPLETED")
-                 and $runtimepercent < $shortjobpercent
-                 and $job->{notifyshortjob}
+                 and $runtimepercent < $unusedtimepercent
+                 and $job->{notifyunusedtime}
                  and $job->{running}{samples} >= $minsamples
                 )) {
                 $notify = 1;
                 $job->{runtimepercent} = round($runtimepercent);
-                $job->{shortjobpercent} = $shortjobpercent;
-                $job->{shortjobnotify} = 1;
+                $job->{unusedtimepercent} = $unusedtimepercent;
+                $job->{unusedtimenotify} = 1;
             }
 
             if ($job->{forcenotify} or
