@@ -45,6 +45,13 @@ NotifyUnusedGPUs=Yes
 NotifyUnusedMemory=Yes
 
 #
+# Force a notification message regardless of any other parameters. This
+# overrides the NotifyUnused* settings. Can be overridden by
+# ~/.slurm-resource-monitor.
+#
+ForceNotify=No
+
+#
 # The percentile of cpu or gpu load to be considered in-use.
 #
 InUseCPUPercent=5

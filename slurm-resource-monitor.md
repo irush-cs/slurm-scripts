@@ -205,6 +205,12 @@ user in `~/.slurm-resource-monitor`.
 Whether to notify on low CPU, GPU or memory usage or not (boolean value). This
 can be set per user in `~/.slurm-resource-monitor`.
 
+### ForceNotify
+
+Force a notification message regardless of any other parameters. This overrides
+the `NotifyUnused*` settings. This can be set per user in
+~/.slurm-resource-monitor.
+
 ### InUseCPUPercent, InUseGPUPercent
 
 The minimum utilization of the CPU or GPU (in percentage) to consider the

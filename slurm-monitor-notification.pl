@@ -176,6 +176,7 @@ NotifyShortJob=No
 NotifyUnusedCPUs=No
 NotifyUnusedGPUs=No
 NotifyUnusedMemory=No
+ForceNotify=No
 
 If you want to fine tune the reported parameters, please look at:
 https://github.com/irush-cs/slurm-scripts/blob/master/slurm-resource-monitor.md

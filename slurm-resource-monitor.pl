@@ -50,6 +50,7 @@ my $debug = 0;
 my $minruntime = 60 * 30;
 my $shortjobpercent = 15;
 my $notifyshortjob = 1;
+my $forcenotify = 0;
 my %notifyunused = (cpus => 1,
                     gpus => 1,
                     memory => 1,
@@ -292,6 +293,7 @@ sub read_conf {
     _update_setting(\$notifyhistory{memory}, $config->{notifymemorygraph}, "bool", "NotifyMemoryGraph");
     _update_setting(\$notifyinteractive, $config->{notifyinteractive}, "bool", "NotifyInteractive");
     _update_setting(\$maxarraytaskid, $config->{maxarraytaskid}, "int", "MaxArrayTaskId");
+    _update_setting(\$forcenotify, $config->{forcenotify}, "bool", "ForceNotify");
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
@@ -432,6 +434,7 @@ sub get_new_jobs {
                 $uconfig->{allowedunusedmemorypercent} = to_percent($uconfig->{allowedunusedmemorypercent}, $allowedunused{memory}{percent});
                 $uconfig->{maxarraytaskid} = to_int($uconfig->{maxarraytaskid}, $maxarraytaskid);
                 $uconfig->{maxignoreunusedmemory} = to_int($uconfig->{maxignoreunusedmemory}, $allowedunused{memory}{ignore});
+                $uconfig->{forcenotify} = to_bool($uconfig->{forcenotify}, $forcenotify);
 
                 $jobstat->{notifyshortjob} = $uconfig->{notifyshortjob};
                 $jobstat->{gpus}{notifyunused} = $uconfig->{notifyunusedgpus};
@@ -451,6 +454,7 @@ sub get_new_jobs {
                 $jobstat->{arraytaskid} = $job->{ArrayTaskId};
                 $jobstat->{notifyinteractive} = $uconfig->{notifyinteractive};
                 $jobstat->{maxarraytaskid} = $uconfig->{maxarraytaskid};
+                $jobstat->{forcenotify} = $uconfig->{forcenotify};
 
                 $stats{$job->{JobId}} = $jobstat;
                 unless (exists $oldjobs{$job->{JobId}}) {
@@ -528,8 +532,10 @@ sub clean_old {
                         $job->{$res}{gooduse} += $job->{$res}{usage}{$count};
                     }
                 }
-                if ($job->{$res}{notifyunused} and $job->{$res}{samples} and $job->{$res}{samples} >= $minsamples) {
-                    if ($job->{$res}{samples} * ($job->{$res}{allowedunused}{percent} / 100) < $job->{$res}{baduse}) {
+                if ($job->{forcenotify} or
+                    ($job->{$res}{notifyunused} and $job->{$res}{samples} and $job->{$res}{samples} >= $minsamples)) {
+                    if ($job->{forcenotify} or
+                        $job->{$res}{samples} * ($job->{$res}{allowedunused}{percent} / 100) < $job->{$res}{baduse}) {
                         $job->{$res}{notify} = 1;
                         $notify = 1;
                         if ($notifyhistory{$res} and @{$job->{$res}{history}}) {
@@ -553,23 +559,25 @@ sub clean_old {
             }
 
             my $runtimepercent = (100 * ($runtime / $timelimit));
-            if ($job->{state} and ($job->{state} eq "COMPLETED")
-                and $runtimepercent < $shortjobpercent
-                and $job->{notifyshortjob}
-                and $job->{running}{samples} >= $minsamples
-               ) {
+            if ($job->{forcenotify} or
+                ($job->{state} and ($job->{state} eq "COMPLETED")
+                 and $runtimepercent < $shortjobpercent
+                 and $job->{notifyshortjob}
+                 and $job->{running}{samples} >= $minsamples
+                )) {
                 $notify = 1;
                 $job->{runtimepercent} = round($runtimepercent);
                 $job->{shortjobpercent} = $shortjobpercent;
                 $job->{shortjobnotify} = 1;
             }
 
-            if ($job->{memory}{notifyunused}
-                and $job->{memory}{samples}
-                and $job->{memory}{samples} >= $minsamples
-                and $job->{memory}{count} * ((100 - $job->{memory}{allowedunused}{percent}) / 100) > $job->{memory}{max_usage}
-                and ($job->{memory}{count} - $job->{memory}{max_usage}) > $job->{memory}{allowedunused}{ignore}
-               ) {
+            if ($job->{forcenotify} or
+                ($job->{memory}{notifyunused}
+                 and $job->{memory}{samples}
+                 and $job->{memory}{samples} >= $minsamples
+                 and $job->{memory}{count} * ((100 - $job->{memory}{allowedunused}{percent}) / 100) > $job->{memory}{max_usage}
+                 and ($job->{memory}{count} - $job->{memory}{max_usage}) > $job->{memory}{allowedunused}{ignore}
+                )) {
                 $job->{memory}{notify} = 1;
                 $notify = 1;
                 if ($notifyhistory{memory} and @{$job->{memory}{history}}) {
