@@ -102,7 +102,7 @@ sub plot {
 
 foreach my $res (qw(cpus gpus)) {
     if ($job->{$res}{notify}) {
-        my $badpercent = round(100 * $job->{$res}{baduse} / $job->{$res}{samples});
+        my $badpercent = $job->{$res}{sample} ? round(100 * $job->{$res}{baduse} / $job->{$res}{samples}) : 0;
         my $baduse = $job->{$res}{count} - $job->{$res}{allowedunused}{count};
         my $betterpercent = 0.66 * $job->{$res}{allowedunused}{percent};
         my $betteruse = 0;
@@ -110,7 +110,7 @@ foreach my $res (qw(cpus gpus)) {
 
         my $table = Text::Table->new({title => "# $res", align => "right", align_title => "right"}, \" | ", {title => "% of time used", align => "right", align_title => "left"});
         foreach my $count (reverse sort {$a <=> $b} keys %{$job->{$res}{usage}}) {
-            my $percent = round(100 * $job->{$res}{usage}{$count} / $job->{$res}{samples});
+            my $percent = $job->{$res}{samples} ? round(100 * $job->{$res}{usage}{$count} / $job->{$res}{samples}) : 0;
             $psum += $percent;
             $betteruse = $count if $psum <= $betterpercent;
             $table->add($count, "${percent}\%");
