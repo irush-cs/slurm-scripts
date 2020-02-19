@@ -84,6 +84,7 @@ sub plot {
             print GP "set yrange [0:$job->{$res}{count}]\n";
             print GP "set format y \"\%.f\"\n";
             print GP "set timefmt \"\%s\"\n";
+            print GP "set grid front\n";
 
             print GP "plot data using (\$1 + $tzoffset):(\$2) with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
             close(GP);
