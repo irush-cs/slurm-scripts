@@ -65,6 +65,12 @@ sub plot {
         $ytics = $job->{$res}{count} / 6;
     }
     if ($job->{$res}{notifyhistory} and -r "$job->{runtimedir}/$res") {
+        my $plots = 2;
+        my @colors = (undef, undef, "blue", "red", "green", "magenta", "cyan", "yellow");
+        if (open(DATA, "<$job->{runtimedir}/$res")) {
+            $plots = scalar(split /,/, <DATA>);
+            close(DATA);
+        }
         if (open(GP, ">$job->{runtimedir}/$res.gp")) {
             print GP "#!/usr/bin/env gnuplot\n";
             print GP "\n";
@@ -86,7 +92,11 @@ sub plot {
             print GP "set timefmt \"\%s\"\n";
             print GP "set grid front\n";
 
-            print GP "plot data using (\$1 + $tzoffset):(\$2) with filledcurves x1 fillcolor rgb \"blue\" title \"$res\"\n";
+            print GP "plot data using (\$1 + $tzoffset):(\$2) with filledcurves x1 fillcolor rgb \"$colors[2]\" title \"$res\"";
+            for (my $i = 3; $i <= $plots; $i++) {
+                print GP ",\\\n       \"\" using (\$1 + $tzoffset):(\$$i) with filledcurves x1 fillcolor rgb \"$colors[$i]\"";
+            }
+            print GP "\n";
             close(GP);
             chmod 0755, "$job->{runtimedir}/$res.gp";
             if (system("gnuplot $job->{runtimedir}/$res.gp") == 0) {

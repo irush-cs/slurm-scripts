@@ -75,7 +75,7 @@ my $deletedata = 1;
 #   baduse  - number of samples with "bad" usage (unused > allowedunused{count})
 #   samples - number of samples
 #   count   - number of resources
-#   history - array of histories [stamp, data]
+#   history - array of histories [stamp, data[, data[, ...]]]
 
 my %stats; 
 
@@ -550,7 +550,7 @@ sub clean_old {
                                 exit 22;
                             }
                             foreach my $h (@{$job->{$res}{history}}) {
-                                print RUNTIME "$h->[0],$h->[1]\n";
+                                print RUNTIME join(",", @$h)."\n";
                             }
                             close(RUNTIME);
                             $job->{$res}{notifyhistory} = 1;
@@ -743,13 +743,13 @@ sub cpu_utilization {
                 $good++ if (100 * $load) > $inusecpupercent;
                 $totalusage += $load;
             }
+            if ($notifyhistory{cpus}) {
+                push @{$job->{cpus}{history}}, [$stamp, $good, sprintf("%.2f", $totalusage)];
+            }
             $totalusage = $totalusage / $job->{cpus}{count};
             $job->{cpus}{lastload} = $totalusage;
             $job->{cpus}{usage}{$good}++;
             $job->{cpus}{samples}++;
-            if ($notifyhistory{cpus}) {
-                push @{$job->{cpus}{history}}, [$stamp, $good];
-            }
         }
         foreach my $cpu (keys %{$job->{cpus}{data}}) {
             $job->{cpus}{data}{$cpu}{lastread} = $utilization[$cpu];
