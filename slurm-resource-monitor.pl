@@ -673,11 +673,12 @@ sub gpu_utilization {
         foreach my $gpu (keys %{$job->{gpus}{data}}) {
             $job->{gpus}{data}{$gpu}{load} = $load[$gpu];
             $good++ if (100 * $load[$gpu]) > $inusegpupercent;
+            $totalusage += $load[$gpu];
         }
         $job->{gpus}{usage}{$good}++;
         $job->{gpus}{samples}++;
         if ($notifyhistory{gpus}) {
-            push @{$job->{gpus}{history}}, [$stamp, $good];
+            push @{$job->{gpus}{history}}, [$stamp, $good, sprintf("%.2f", $totalusage / 100)];
         }
     }
 }
