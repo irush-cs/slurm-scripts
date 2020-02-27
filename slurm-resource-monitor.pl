@@ -28,9 +28,9 @@ use lib "$scriptdir";
 
 use cshuji::Slurm;
 
-use POSIX qw(round WNOHANG);
+use POSIX qw(round WNOHANG ceil);
 use File::Find;
-use List::Util qw(none any);
+use List::Util qw(none any max);
 use Data::Dumper;
 use Getopt::Long;
 use Sys::Hostname;
@@ -85,6 +85,14 @@ my %oldjobs;
 # count as in-use threshold
 my $inusecpupercent = 5;
 my $inusegpupercent = 15;
+
+my %loadmetric = (cpu => {value => "sum",
+                          sum => 1,
+                          count => 0},
+                  gpu => {value => "both",
+                          sum => 1,
+                          count => 1},
+                 );
 
 my $minsamples = 10;
 
@@ -249,6 +257,7 @@ sub read_conf {
         my $new = shift;
         my $type = shift;
         my $name = shift;
+        my $data = shift;
 
         if (defined $new) {
             $temp = $$var;
@@ -277,6 +286,13 @@ sub read_conf {
                     print STDERR "Bad directory: $name is not a directory ($new)\n";
                     exit 13;
                 }
+            } elsif ($type eq "options") {
+                $new = lc($new);
+                $$var = $new;
+                unless (grep {$new eq $_} @$data) {
+                    print STDERR "Bad configuration: Invalid value ($new) for $name (not in \"".join('","',@$data)."\")\n";
+                    exit 13;
+                }
             } else {
                 print STDERR "Bad configuration type: \"$type\"\n";
                 exit 12;
@@ -298,6 +314,14 @@ sub read_conf {
 
     _update_setting(\$inusecpupercent, $config->{inusecpupercent}, "percent", "InUseCPUPercent");
     _update_setting(\$inusegpupercent, $config->{inusegpupercent}, "percent", "InUseGPUPercent");
+
+    _update_setting(\$loadmetric{cpu}{value}, $config->{cpuloadmetric}, "options", "CPULoadMetric", [qw(sum count both)]);
+    _update_setting(\$loadmetric{gpu}{value}, $config->{gpuloadmetric}, "options", "GPULoadMetric", [qw(sum count both)]);
+    foreach my $res (qw(cpu gpu)) {
+        foreach my $value (qw(count sum)) {
+            $loadmetric{$res}{$value} = (grep {$_ eq $loadmetric{$res}{value}} ("both", $value)) ? 1 : 0;
+        }
+    }
 
     _update_setting(\$allowedunused{cpus}{count}, $config->{allowedunusedcpus}, "int", "AllowedUnusedCPUs");
     _update_setting(\$allowedunused{cpus}{percent}, $config->{allowedunusedcpupercent}, "percent", "AllowedUnusedCPUPercent");
@@ -672,13 +696,23 @@ sub gpu_utilization {
         my $good = 0;
         foreach my $gpu (keys %{$job->{gpus}{data}}) {
             $job->{gpus}{data}{$gpu}{load} = $load[$gpu];
-            $good++ if (100 * $load[$gpu]) > $inusegpupercent;
+            $good++ if $load[$gpu] > $inusegpupercent;
             $totalusage += $load[$gpu];
+        }
+        # $good is by "count", if need, change to by "sum" or "both" (max)
+        my $goodsum = ceil(($totalusage - $inusegpupercent) / 100);
+        if ($loadmetric{gpu}{value} eq "both") {
+            $good = max($goodsum, $good);
+        } elsif ($loadmetric{gpu}{sum}) {
+            $good = $goodsum;
         }
         $job->{gpus}{usage}{$good}++;
         $job->{gpus}{samples}++;
         if ($notifyhistory{gpus}) {
-            push @{$job->{gpus}{history}}, [$stamp, $good, sprintf("%.2f", $totalusage / 100)];
+            my @history = ($stamp);
+            push @history, $good if $loadmetric{gpu}{count};
+            push @history, sprintf("%.2f", ($totalusage / 100)) if $loadmetric{gpu}{sum};
+            push @{$job->{gpus}{history}}, [@history];
         }
     }
 }
@@ -745,12 +779,22 @@ sub cpu_utilization {
                 $totalusage += $load;
             }
             if ($notifyhistory{cpus}) {
-                push @{$job->{cpus}{history}}, [$stamp, $good, sprintf("%.2f", $totalusage)];
+                my @history = ($stamp);
+                push @history, $good if $loadmetric{cpu}{count};
+                push @history, sprintf("%.2f", $totalusage) if $loadmetric{cpu}{sum};
+                push @{$job->{cpus}{history}}, [@history];
             }
-            $totalusage = $totalusage / $job->{cpus}{count};
-            $job->{cpus}{lastload} = $totalusage;
+            # $good is by "count", if need, change to by "sum" or "both" (max)
+            my $goodsum = ceil($totalusage - ($inusecpupercent / 100.0));
+            if ($loadmetric{cpu}{value} eq "both") {
+                $good = max($goodsum, $good);
+            } elsif ($loadmetric{cpu}{sum}) {
+                $good = $goodsum;
+            }
             $job->{cpus}{usage}{$good}++;
             $job->{cpus}{samples}++;
+            $totalusage = $totalusage / $job->{cpus}{count};
+            $job->{cpus}{lastload} = $totalusage;
         }
         foreach my $cpu (keys %{$job->{cpus}{data}}) {
             $job->{cpus}{data}{$cpu}{lastread} = $utilization[$cpu];

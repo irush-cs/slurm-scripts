@@ -71,6 +71,17 @@ AllowedUnusedGPUPercent=25
 AllowedUnusedMemoryPercent=25
 
 #
+# The metric to use when measuring CPU and GPU load:
+# Sum: Sums up the load from all CPUs/GPUs
+# Count: Counts the discrete used resources which are above InUseCPUPercent or
+#        InUseGPUPercent
+# Both: Report both Count and Sum. Takes the high usage value for reporting
+#       check (usually "Count").
+#
+CPULoadMetric=Sum
+GPULoadMetric=Both
+
+#
 # The minimum percent of the job's total runtime which it needs to be monitored
 #
 MinMonitoredPercent=75

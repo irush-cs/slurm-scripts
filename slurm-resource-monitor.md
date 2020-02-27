@@ -230,6 +230,15 @@ AllowedUnusedGPUPercent), a notification is sent.
 
 These can be set per user in `~/.slurm-resource-monitor`.
 
+### CPULoadMetric, GPULoadMetric
+
+The metric to use when measuring CPU and GPU load:
+* Sum: Sums up the load from all CPUs/GPUs. Default for CPU.
+* Count: Counts the discrete used CPUs/GPUs which are above InUseCPUPercent or
+  InUseGPUPercent.
+* Both: Report both Count and Sum. Takes the high usage value for reporting
+  check (usually "Count"). Default for GPU.
+
 ### MinMonitoredPercent
 
 If the job is monitored less than this percent of the total runtime, no
