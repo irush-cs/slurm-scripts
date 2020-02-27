@@ -8,6 +8,7 @@ School of Computer Science and Engineering.
 * [pam_slurm_save_cgroups](#pam_slurm_save_cgroupssh)
 * [healthcheck.sh](#healthchecksh)
 * [healthcheck.d/netspeed.sh](#healthcheckdnetspeedsh)
+* [healthcheck.d/highload.sh](#healthcheckdhighloadsh)
 * [cluster.conf](#clusterconf)
 * [functions.bash](#functionsbash)
 * [cshuji/Slurm.pm](#cshujislurmpm)
@@ -56,6 +57,10 @@ directory is missing, the node will be drained with the appropriate message.
 
 A healthcheck script to verify that the default route interface speed is not
 less then 1000Mb/s.
+
+## healthcheck.d/highload.sh
+
+A healthcheck script to check if the load is below 10 * CPUs.
 
 ## cluster\.conf
 
