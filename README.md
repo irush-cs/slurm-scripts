@@ -34,6 +34,12 @@ session		required	pam_exec.so seteuid /etc/security/pam_slurm_save_cgroups.sh re
 `/run/slurm-saved-cgroups/` should be created (on boot) owned by root\:root
 with permissions mode `0700`.
 
+Instead of the `restore` parameter, `slurm` can be used to force all cgroups to
+be moved to a /slurm/ subtree, regardless of whether slurm uses them or
+not. This is useful when pam\_systemd.so is not used, but the user processes
+still shouldn't be in the system-slurmd.slice cgroup. This only affects non
+root cgroups, if the task is in the root (`/`), it won't be moved.
+
 ## healthcheck\.sh
 
 A script to run as the `HealthCheckProgram` (as set in `slurm.conf`) used to
