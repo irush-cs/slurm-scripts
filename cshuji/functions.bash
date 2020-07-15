@@ -22,6 +22,8 @@
 #   slurm_config <conf>
 #   slurm_get_config
 #   slurm_maintainers
+#   slurm_get_node <node>
+#   slurm_node <node> <key>
 ################################################################################
 
 ################################################################################
@@ -73,4 +75,44 @@ function slurm_maintainers {
     fi
 
     echo $maintainers
+}
+
+################################################################################
+# gets a node data and stores in _slurm_nodes.
+################################################################################
+declare -A _slurm_nodes
+function slurm_get_node {
+    #echo "**slurm_get_node**"
+    if [[ $# -lt 1 ]]; then
+        node=`hostname`
+    else
+        node=$1
+    fi
+    scontrol show node $node > /dev/null 2>&1 || return
+
+    # two calls to scontrol for multi simple values and multi-word values (OS and Reason)
+    eval `scontrol show node $node | grep -v '^ *OS' | grep -v '^ *Reason' | sed -e 's/^ *//g' -e 's/ /\n/g' | grep -v '^$' | sed -e 's/=/ /' | awk '{printf "_slurm_nodes['$node',%s]=\"%s\"; ", $1, $2}'`
+
+    eval `scontrol show node $node | grep -E '^ *(OS|Reason)=' | sed -e 's/^ *//g' -e 's/\\\\/\\\\\\\\/g' -e 's/"/\"/g' -e 's/=/]="/' -e 's/^/_slurm_nodes['$node,'/' -e 's/$/"/'`
+}
+
+################################################################################
+# Returns specific node info. Calls slurm_get_node if needed. Requires two
+# parameters: node and keys
+# example: slurm_node node-001 State
+################################################################################
+function slurm_node {
+    node=${1:-}
+    key=${2:-}
+    if [[ -z "$node" || -z "$key" ]]; then
+        return
+    fi
+    declare -gA _slurm_nodes
+    if [[ -z "${_slurm_nodes[$node,NodeName]:+isset}" ]]; then
+        slurm_get_node $node
+    fi
+
+    if [[ -n "$key" ]]; then
+        echo ${_slurm_nodes[$node,$key]}
+    fi
 }

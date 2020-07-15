@@ -106,6 +106,21 @@ slurm_config MaxArraySize
 
 Will call `slurm_get_config` if needed.
 
+### slurm\_get\_node <node>
+
+Retrieves the `node`s status from `scontrol show node` and saves the data in
+`_slurm_nodes` array.
+
+### slurm\_node <node> <key>
+
+Returns a specific element from the node status (from `scontrol show node`)
+```
+slurm_node node-01 State
+slurm_node node-01 BootTime
+```
+
+Will call `slurm_get_node` if needed.
+
 ### slurm\_maintainers
 
 Returns the maintainers list from `cluster.conf`
