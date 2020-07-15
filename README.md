@@ -9,6 +9,7 @@ School of Computer Science and Engineering.
 * [healthcheck.sh](#healthchecksh)
 * [healthcheck.d/netspeed.sh](#healthcheckdnetspeedsh)
 * [healthcheck.d/highload.sh](#healthcheckdhighloadsh)
+* [healthcheck.d/needs-reboot.sh](#healthcheckdneeds-rebootsh)
 * [cluster.conf](#clusterconf)
 * [functions.bash](#functionsbash)
 * [cshuji/Slurm.pm](#cshujislurmpm)
@@ -67,6 +68,12 @@ less then 1000Mb/s.
 ## healthcheck.d/highload.sh
 
 A healthcheck script to check if the load is below 10 * CPUs.
+
+## healthcheck.d/needs-reboot.sh
+
+A healthcheck script that reboots a node if the node is IDLE+DRAIN and drained
+because of 'HC: needs reboot'. The node is kept drained until it's idle, then
+rebooted, then resumed (by the `healthcheck.sh` script).
 
 ## cluster\.conf
 
