@@ -39,6 +39,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
 our @EXPORT = qw();
 
 our $VERSION = "0.1";
+our $escaped_delimiter = 0;
 
 BEGIN {
     # for backward compatibility
@@ -169,6 +170,13 @@ Converts the lines returned by various slurm utilities to an array ref
 are the headers. Usually the '-p' option should be added to the commands, and
 the '-n' should not.
 
+If $cshuji::Slurm::escaped_delimiter is set to 1, the input is parsed as though
+the pipes in the arbitrary strings have been escaped (e.g. when users submit
+jobs with pipe in the name). This is currently not a part of the slurm CLI.
+
+https://github.com/irush-cs/slurm/tree/irush/escape-delimiter
+https://bugs.schedmd.com/show_bug.cgi?id=2265
+
 Example:
 
   parse_list([`sacctmgr list clusters -p`])
@@ -190,7 +198,26 @@ sub parse_list {
 
     foreach my $line (@$lines) {
         chomp($line);
-        my @entries = split /\|/, $line, -1;
+        my @entries;
+        if ($escaped_delimiter) {
+            my $remainder = $line;
+            my $prefix = "";
+            while ($remainder =~ m/^(.*?)([\\|])(.*)$/) {
+                if ($2 eq '\\') {
+                    $prefix .= $1.substr($3, 0, 1);
+                    $remainder = substr($3,1);
+                } elsif ($2 eq '|') {
+                    push @entries, $prefix.$1;
+                    $prefix = '';
+                    $remainder = $3;
+                } else {
+                    die "huh??";
+                }
+            }
+            push @entries, $prefix.$remainder;
+        } else {
+            @entries = split /\|/, $line, -1;
+        }
         pop @entries if $pop;
         my %entry;
         @entry{@headers} = @entries;

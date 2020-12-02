@@ -156,6 +156,15 @@ ref. E.g:
 $results = parse_list([`sacctmgr list users -s -p`])
 ```
 
+If `$cshuji::Slurm::escaped_delimiter` is set to 1, the input is parsed as
+though the pipes in the arbitrary strings have been escaped (e.g. when users
+submit jobs with pipe in the name). This is currently not a part of the slurm
+CLI.
+
+https://github.com/irush-cs/slurm/tree/irush/escape-delimiter
+https://bugs.schedmd.com/show_bug.cgi?id=2265
+
+
 ### split\_gres
 
 Splits a GRES or TRES string to a perl hash. Can combine the has with previous
