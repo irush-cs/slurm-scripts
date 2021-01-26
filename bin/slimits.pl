@@ -22,13 +22,16 @@ use cshuji::Slurm qw(split_gres);
 
 my $user = getpwuid($<);
 my $all = 0;
+my $long;
 unless (GetOptions("u|user=s" => \$user,
                    "a|all+"   => \$all,
+                   "l|long!"  => \$long,
                   )) {
     print STDERR "slimits [options]\n";
     print STDERR "Options:\n";
     print STDERR "  -u <user> - check for <user> instead of current user\n";
     print STDERR "  -a        - show all accounts instead of just default\n";
+    print STDERR "  -l        - show all attributes, even without limits\n";
     print STDERR "  -aa       - show all accounts including which can't run\n";
     exit 1;
 }
@@ -77,11 +80,12 @@ my @accounts = grep {$_->{UserName} eq "$user($uid)"} @assocs;
 # default first
 @accounts = sort {$a->{DefAssoc} ne $b->{DefAssoc} ? $b->{DefAssoc} eq "Yes" : $a->{Account} cmp $b->{Account}} @accounts;
 
-my @rrows;
+my %haslimits;
+my @entries;
+my %tlength;
 ACCOUNT:
 foreach my $assoc (@accounts) {
     my @rows;
-    my %tlength;
     do {
         my %entry;
         $entry{User} = $assoc->{_UserName};
@@ -90,11 +94,13 @@ foreach my $assoc (@accounts) {
             $entry{$tres} = [$assoc->{_GrpTRES}{Usage}{$tres}, $assoc->{_GrpTRES}{Limit}{$tres}];
             $tlength{$tres} = max($tlength{$tres} // 0, length($entry{$tres}[1]));
             next ACCOUNT if ($all < 2 and exists $trestorun{$tres} and $entry{$tres}[1] eq "0");
+            $haslimits{$tres} ||= $entry{$tres}[1] ne "N";
         }
         foreach my $nontres (sort keys %nontres) {
             $entry{$nontres} = [$assoc->{_nontres}{Usage}{$nontres}, $assoc->{_nontres}{Limit}{$nontres}];
             $tlength{$nontres} = max($tlength{$nontres} // 0, length($entry{$nontres}[1]));
             next ACCOUNT if ($all < 2 and exists $trestorun{$nontres} and $entry{$nontres}[1] eq "0");
+            $haslimits{$nontres} ||= $entry{$nontres}[1] ne "N";
         }
         push @rows, {%entry};
 
@@ -113,8 +119,19 @@ foreach my $assoc (@accounts) {
         }
     } while $assoc;
 
-    push @rrows, [];
-    foreach my $row (@rows) {
+    push @entries, [@rows];
+    last unless $all;
+}
+
+unless ($long) {
+    delete @tres{grep {not $haslimits{$_}} keys %haslimits};
+    delete @nontres{grep {not $haslimits{$_}} keys %haslimits};
+}
+
+my @rows;
+foreach my $entries (@entries) {
+    push @rows, [];
+    foreach my $row (@$entries) {
         my @data = ($row->{User}, $row->{Account});
         foreach my $tres (sort keys %tres) {
             push @data, sprintf "\%i / \%$tlength{$tres}s", @{$row->{$tres}}
@@ -122,9 +139,8 @@ foreach my $assoc (@accounts) {
         foreach my $nontres (sort keys %nontres) {
             push @data, sprintf "\%s / \%$tlength{$nontres}s", @{$row->{$nontres}}
         }
-        push @{$rrows[-1]}, [@data]
+        push @{$rows[-1]}, [@data]
     }
-    last unless $all;
 }
 
 my $table = Text::Table->new("User", \" | ", "Account", \" | ",
@@ -133,7 +149,7 @@ my $table = Text::Table->new("User", \" | ", "Account", \" | ",
                             );
 
 my @seps = 0;
-foreach my $row (@rrows) {
+foreach my $row (@rows) {
     $table->load(@$row);
     push @seps, scalar(@$row);
 }
