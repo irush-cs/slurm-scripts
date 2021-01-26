@@ -15,6 +15,7 @@ School of Computer Science and Engineering.
 * [cshuji/Slurm.pm](#cshujislurmpm)
 * [Makefile](#makefile)
 * [slurm-resource-monitor](#slurm-resource-monitor)
+* [slimits.pl](#slimitspl)
 
 ## pam\_slurm\_save\_cgroups\.sh
 
@@ -350,3 +351,8 @@ make test
 ## slurm-resource-monitor
 
 See [slurm-resource-monitor.md](slurm-resource-monitor.md)
+
+## slimits.pl
+
+Prints a user's current limits, as parsed from `scontrol show assoc_mgr
+flags=assoc`
