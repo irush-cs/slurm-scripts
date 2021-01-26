@@ -420,6 +420,82 @@ PartitionName=killable
    DefMemPerNode=UNLIMITED MaxMemPerNode=UNLIMITED
 ";
 
+my $assoc_mgr = "Current Association Manager state
+
+Association Records
+
+ClusterName=cluster1 Account=root UserName= Partition= Priority=0 ID=1
+    SharesRaw/Norm/Level/Factor=1/0.00/1/0.00
+    UsageRaw/Norm/Efctv=1646501252.24/1.00/1.00
+    ParentAccount= Lft=1 DefAssoc=No
+    GrpJobs=N(700) GrpJobsAccrue=N(0)
+    GrpSubmitJobs=N(700) GrpWall=N(10556027.97)
+    GrpTRES=cpu=N(1434),mem=N(2709980),energy=N(0),node=N(66),billing=N(1434),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(80),license/interactive=N(6)
+    GrpTRESMins=cpu=N(27642627),mem=N(49493614890),energy=N(0),node=N(10586614),billing=N(27441687),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(1093678),license/interactive=N(78325)
+    GrpTRESRunMins=cpu=N(3413840),mem=N(13010318176),energy=N(0),node=N(1195517),billing=N(3413840),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(383525),license/interactive=N(7705)
+    MaxJobs= MaxJobsAccrue= MaxSubmitJobs= MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh=
+ClusterName=cluster1 Account=guests UserName= Partition= Priority=0 ID=10
+    SharesRaw/Norm/Level/Factor=1/0.17/6/0.00
+    UsageRaw/Norm/Efctv=112387028.16/0.07/0.07
+    ParentAccount=root(1) Lft=1620 DefAssoc=No
+    GrpJobs=N(60) GrpJobsAccrue=N(0)
+    GrpSubmitJobs=N(60) GrpWall=N(304980.53)
+    GrpTRES=cpu=554(230),mem=3007203(673828),energy=N(0),node=N(17),billing=N(230),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=33(12),license/interactive=N(1)
+    GrpTRESMins=cpu=N(1873117),mem=N(7858589396),energy=N(0),node=N(334291),billing=N(1873117),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(114222),license/interactive=N(4871)
+    GrpTRESRunMins=cpu=N(1714124),mem=N(4605810015),energy=N(0),node=N(409492),billing=N(1714124),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(42851),license/interactive=N(1263)
+    MaxJobs= MaxJobsAccrue= MaxSubmitJobs= MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh=
+ClusterName=cluster1 Account=account1 UserName= Partition= Priority=0 ID=11
+    SharesRaw/Norm/Level/Factor=1/0.03/30/0.00
+    UsageRaw/Norm/Efctv=6.58/0.00/0.00
+    ParentAccount=guests(10) Lft=2743 DefAssoc=No
+    GrpJobs=N(0) GrpJobsAccrue=N(0)
+    GrpSubmitJobs=N(0) GrpWall=N(0.04)
+    GrpTRES=cpu=194(0),mem=1052521(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=12(0),license/interactive=N(0)
+    GrpTRESMins=cpu=N(0),mem=N(50),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    GrpTRESRunMins=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    MaxJobs= MaxJobsAccrue= MaxSubmitJobs= MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh=
+ClusterName=cluster1 Account=account1 UserName=user1(1000) Partition= Priority=0 ID=22
+    SharesRaw/Norm/Level/Factor=1/0.33/3/0.61
+    UsageRaw/Norm/Efctv=5.88/0.00/0.89
+    ParentAccount= Lft=2746 DefAssoc=No
+    GrpJobs=N(0) GrpJobsAccrue=N(0)
+    GrpSubmitJobs=N(0) GrpWall=N(0.04)
+    GrpTRES=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=2(0)
+    GrpTRESMins=cpu=N(0),mem=N(50),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    GrpTRESRunMins=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    MaxJobs= MaxJobsAccrue= MaxSubmitJobs= MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh=
+ClusterName=cluster1 Account=account1 UserName=user2(2000) Partition= Priority=0 ID=12
+    SharesRaw/Norm/Level/Factor=1/0.33/3/0.61
+    UsageRaw/Norm/Efctv=0.00/0.00/0.00
+    ParentAccount= Lft=2748 DefAssoc=No
+    GrpJobs=N(0) GrpJobsAccrue=N(0)
+    GrpSubmitJobs=N(0) GrpWall=N(0.00)
+    GrpTRES=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=2(0)
+    GrpTRESMins=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    GrpTRESRunMins=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    MaxJobs= MaxJobsAccrue= MaxSubmitJobs= MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh=
+";
+
 my %partitions = ("long" => {"PartitionName" => "long",
                              "AllowGroups" => "ALL",
                              "DenyAccounts" => "killable-cs",
@@ -485,7 +561,149 @@ my %partitions = ("long" => {"PartitionName" => "long",
                                  "MaxMemPerNode" => "UNLIMITED",
                                 },                  
                  );
-  
+
+my @assoc_mgr = ({
+                  "ClusterName" => "cluster1",
+                  "Account" => "root",
+                  "UserName" => "",
+                  "Partition" => "",
+                  "Priority" => "0",
+                  "ID" => "1",
+                  "SharesRaw/Norm/Level/Factor" => "1/0.00/1/0.00",
+                  "UsageRaw/Norm/Efctv" => "1646501252.24/1.00/1.00",
+                  "ParentAccount" => "",
+                  "Lft" => "1",
+                  "DefAssoc" => "No",
+                  "GrpJobs" => "N(700)",
+                  "GrpJobsAccrue" => "N(0)",
+                  "GrpSubmitJobs" => "N(700)",
+                  "GrpWall" => "N(10556027.97)",
+                  "GrpTRES" => "cpu=N(1434),mem=N(2709980),energy=N(0),node=N(66),billing=N(1434),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(80),license/interactive=N(6)",
+                  "GrpTRESMins" => "cpu=N(27642627),mem=N(49493614890),energy=N(0),node=N(10586614),billing=N(27441687),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(1093678),license/interactive=N(78325)",
+                  "GrpTRESRunMins" => "cpu=N(3413840),mem=N(13010318176),energy=N(0),node=N(1195517),billing=N(3413840),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(383525),license/interactive=N(7705)",
+                  "MaxJobs" => "",
+                  "MaxJobsAccrue" => "",
+                  "MaxSubmitJobs" => "",
+                  "MaxWallPJ" => "",
+                  "MaxTRESPJ" => "",
+                  "MaxTRESPN" => "",
+                  "MaxTRESMinsPJ" => "",
+                  "MinPrioThresh" => "",
+                 },
+                 {
+                  "ClusterName" => "cluster1",
+                  "Account" => "guests",
+                  "UserName" => "",
+                  "Partition" => "",
+                  "Priority" => "0",
+                  "ID" => "10",
+                  "SharesRaw/Norm/Level/Factor" => "1/0.17/6/0.00",
+                  "UsageRaw/Norm/Efctv" => "112387028.16/0.07/0.07",
+                  "ParentAccount" => "root(1)",
+                  "Lft" => "1620",
+                  "DefAssoc" => "No",
+                  "GrpJobs" => "N(60)",
+                  "GrpJobsAccrue" => "N(0)",
+                  "GrpSubmitJobs" => "N(60)",
+                  "GrpWall" => "N(304980.53)",
+                  "GrpTRES" => "cpu=554(230),mem=3007203(673828),energy=N(0),node=N(17),billing=N(230),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=33(12),license/interactive=N(1)",
+                  "GrpTRESMins" => "cpu=N(1873117),mem=N(7858589396),energy=N(0),node=N(334291),billing=N(1873117),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(114222),license/interactive=N(4871)",
+                  "GrpTRESRunMins" => "cpu=N(1714124),mem=N(4605810015),energy=N(0),node=N(409492),billing=N(1714124),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(42851),license/interactive=N(1263)",
+                  "MaxJobs" => "",
+                  "MaxJobsAccrue" => "",
+                  "MaxSubmitJobs" => "",
+                  "MaxWallPJ" => "",
+                  "MaxTRESPJ" => "",
+                  "MaxTRESPN" => "",
+                  "MaxTRESMinsPJ" => "",
+                  "MinPrioThresh" => "",
+                 },
+                 {
+                  "ClusterName" => "cluster1",
+                  "Account" => "account1",
+                  "UserName" => "",
+                  "Partition" => "",
+                  "Priority" => "0",
+                  "ID" => "11",
+                  "SharesRaw/Norm/Level/Factor" => "1/0.03/30/0.00",
+                  "UsageRaw/Norm/Efctv" => "6.58/0.00/0.00",
+                  "ParentAccount" => "guests(10)",
+                  "Lft" => "2743",
+                  "DefAssoc" => "No",
+                  "GrpJobs" => "N(0)",
+                  "GrpJobsAccrue" => "N(0)",
+                  "GrpSubmitJobs" => "N(0)",
+                  "GrpWall" => "N(0.04)",
+                  "GrpTRES" => "cpu=194(0),mem=1052521(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=12(0),license/interactive=N(0)",
+                  "GrpTRESMins" => "cpu=N(0),mem=N(50),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                  "GrpTRESRunMins" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                  "MaxJobs" => "",
+                  "MaxJobsAccrue" => "",
+                  "MaxSubmitJobs" => "",
+                  "MaxWallPJ" => "",
+                  "MaxTRESPJ" => "",
+                  "MaxTRESPN" => "",
+                  "MaxTRESMinsPJ" => "",
+                  "MinPrioThresh" => "",
+                 },
+                 {
+                  "ClusterName" => "cluster1",
+                  "Account" => "account1",
+                  "UserName" => "user1(1000)",
+                  "Partition" => "",
+                  "Priority" => "0",
+                  "ID" => "22",
+                  "SharesRaw/Norm/Level/Factor" => "1/0.33/3/0.61",
+                  "UsageRaw/Norm/Efctv" => "5.88/0.00/0.89",
+                  "ParentAccount" => "",
+                  "Lft" => "2746",
+                  "DefAssoc" => "No",
+                  "GrpJobs" => "N(0)",
+                  "GrpJobsAccrue" => "N(0)",
+                  "GrpSubmitJobs" => "N(0)",
+                  "GrpWall" => "N(0.04)",
+                  "GrpTRES" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=2(0)",
+                  "GrpTRESMins" => "cpu=N(0),mem=N(50),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                  "GrpTRESRunMins" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                  "MaxJobs" => "",
+                  "MaxJobsAccrue" => "",
+                  "MaxSubmitJobs" => "",
+                  "MaxWallPJ" => "",
+                  "MaxTRESPJ" => "",
+                  "MaxTRESPN" => "",
+                  "MaxTRESMinsPJ" => "",
+                  "MinPrioThresh" => "",
+                 },
+                 {
+                  "ClusterName" => "cluster1",
+                  "Account" => "account1",
+                  "UserName" => "user2(2000)",
+                  "Partition" => "",
+                  "Priority" => "0",
+                  "ID" => "12",
+                  "SharesRaw/Norm/Level/Factor" => "1/0.33/3/0.61",
+                  "UsageRaw/Norm/Efctv" => "0.00/0.00/0.00",
+                  "ParentAccount" => "",
+                  "Lft" => "2748",
+                  "DefAssoc" => "No",
+                  "GrpJobs" => "N(0)",
+                  "GrpJobsAccrue" => "N(0)",
+                  "GrpSubmitJobs" => "N(0)",
+                  "GrpWall" => "N(0.00)",
+                  "GrpTRES" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=2(0)",
+                  "GrpTRESMins" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                  "GrpTRESRunMins" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                  "MaxJobs" => "",
+                  "MaxJobsAccrue" => "",
+                  "MaxSubmitJobs" => "",
+                  "MaxWallPJ" => "",
+                  "MaxTRESPJ" => "",
+                  "MaxTRESPN" => "",
+                  "MaxTRESMinsPJ" => "",
+                  "MinPrioThresh" => "",
+                 },
+);
+
 my $results = parse_scontrol_show([split /\n/, $jobs]);
 is_deeply($results, \%jobs);
 
@@ -494,5 +712,8 @@ is_deeply($results, \%nodes);
 
 $results = parse_scontrol_show([split /\n/, $partitions]);
 is_deeply($results, \%partitions);
+
+$results = parse_scontrol_show([split /\n/, $assoc_mgr], type => "list");
+is_deeply($results, \@assoc_mgr);
 
 done_testing();

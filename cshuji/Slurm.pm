@@ -4,7 +4,7 @@ package cshuji::Slurm;
 #
 #   cshuji/Slurm.pm
 #
-#   Copyright (C) 2018-2020 Hebrew University of Jerusalem Israel, see LICENSE
+#   Copyright (C) 2018-2021 Hebrew University of Jerusalem Israel, see LICENSE
 #   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
@@ -64,12 +64,25 @@ Slurm utility functions. Currently uses the slurm binaries and not the Slurm API
 
 =head2 parse_scontrol_show
 
- $results = parse_scontrol_show($lines)
+ $results = parse_scontrol_show($lines, [type => "list|hash"])
 
 Converts the lines returned by "scontrol show <something>" to a hash ref.
 
 Any additional data (such as the node resources of jobs), is in the "_DETAILS"
 key of the element.
+
+Available options:
+
+=over
+
+=over
+
+=item type - If set to "list" a list ref is returned instead of hash ref (good
+for show assoc_mgr). Default to "hash"
+
+=back
+
+=back
 
 Example:
 
@@ -80,6 +93,10 @@ Example:
 
 sub parse_scontrol_show {
     my $lines = shift;
+    my %args = @_;
+
+    $args{type} //= "hash";
+    my $listres = $args{type} eq "list";
 
     # Reason for show job can be in the middle of the line (?!?!)
     # JobName comes at the end of the line
@@ -90,6 +107,7 @@ sub parse_scontrol_show {
     my @withspace1711 = qw(OS);
 
     my %results;
+    my @results;
     my %current;
     my $reskey;
     my $indent;
@@ -99,23 +117,32 @@ sub parse_scontrol_show {
         chomp($line);
         return {} if ($line eq "No jobs in the system");
         next if $line =~ m/^ *$/;
+        next if $line eq "Current Association Manager state";
+        next if $line eq "Association Records";
 
         # new entry
         if ($line =~ m/^[^ ]/) {
-            my ($key) = ($line =~ m/^([^=]+)/);
+            if (not $listres) {
+                my ($key) = ($line =~ m/^([^=]+)/);
 
-            # first entry
-            if ($reskey) {
-                if ($reskey ne $key) {
-                    print STDERR "Too many keys: $key != $reskey\n";
+                # first entry
+                if ($reskey) {
+                    if ($reskey ne $key) {
+                        print STDERR "Too many keys: $key != $reskey\n";
+                    }
+                } else {
+                    $reskey = $key;
+                }
+
+                # save previous entry
+                if (%current) {
+                    $results{$current{$reskey}} = {%current};
                 }
             } else {
-                $reskey = $key;
-            }
-
-            # save previous entry
-            if (%current) {
-                $results{$current{$reskey}} = {%current};
+                # save previous entry
+                if (%current) {
+                    push @results, {%current};
+                }
             }
             %current = ();
         } elsif (not $indent) {
@@ -139,7 +166,8 @@ sub parse_scontrol_show {
                 $lineparams{$key} = $line;
                 $line = "";
             } else {
-                ($value, $line) = $line =~ m/^([^ ]+)(.*)/;
+                $line =~ m/^([^ ]+)(.*)/ or $line =~ m/(^) (.*)/;
+                ($value, $line) = ($1, $2);
                 $lineparams{$key} = $value;
             }
             $first = 0;
@@ -154,11 +182,15 @@ sub parse_scontrol_show {
         }
     }
 
-    if (%current and $reskey) {
-        $results{$current{$reskey}} = {%current};
+    if ($listres) {
+        push @results, {%current} if %current;
+    } else {
+        if (%current and $reskey) {
+            $results{$current{$reskey}} = {%current};
+        }
     }
 
-    return \%results;
+    return $listres ? \@results : \%results;
 }
 
 =head2 parse_list
