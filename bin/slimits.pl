@@ -34,9 +34,12 @@ unless (GetOptions("u|user=s" => \$user,
 }
 my $uid = getpwnam($user);
 my %trestorun = (cpu => 1,
+                 MaxSubmitJobs => 1,
                 );
 
 my %tres;
+my %nontres = (MaxSubmitJobs => 1,
+              );
 my @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
 foreach my $assoc (@assocs) {
     $assoc->{_ParentAccount} = $assoc->{ParentAccount} =~ s/\(.*\)$//r;
@@ -54,6 +57,17 @@ foreach my $assoc (@assocs) {
             next;
         }
         $tres{$tres} = $tres;
+    }
+    $assoc->{_nontres} = {Limit => {},
+                          Usage => {},
+                         };
+    foreach my $nontres (keys %nontres) {
+        if (($assoc->{$nontres} or "N(N)") =~ m/(.*)\((.*)\)/) {
+            $assoc->{_nontres}{Usage}{$nontres} = $2;
+            $assoc->{_nontres}{Limit}{$nontres} = $1;
+        } else {
+            print STDERR "Warning: Don't know how to handle \"$nontres\" limit of \"$assoc->{$nontres}\"\n";
+        }
     }
 }
 
@@ -76,6 +90,11 @@ foreach my $assoc (@accounts) {
             $entry{$tres} = [$assoc->{_GrpTRES}{Usage}{$tres}, $assoc->{_GrpTRES}{Limit}{$tres}];
             $tlength{$tres} = max($tlength{$tres} // 0, length($entry{$tres}[1]));
             next ACCOUNT if ($all < 2 and exists $trestorun{$tres} and $entry{$tres}[1] eq "0");
+        }
+        foreach my $nontres (sort keys %nontres) {
+            $entry{$nontres} = [$assoc->{_nontres}{Usage}{$nontres}, $assoc->{_nontres}{Limit}{$nontres}];
+            $tlength{$nontres} = max($tlength{$nontres} // 0, length($entry{$nontres}[1]));
+            next ACCOUNT if ($all < 2 and exists $trestorun{$nontres} and $entry{$nontres}[1] eq "0");
         }
         push @rows, {%entry};
 
@@ -100,13 +119,17 @@ foreach my $assoc (@accounts) {
         foreach my $tres (sort keys %tres) {
             push @data, sprintf "\%i / \%$tlength{$tres}s", @{$row->{$tres}}
         }
+        foreach my $nontres (sort keys %nontres) {
+            push @data, sprintf "\%s / \%$tlength{$nontres}s", @{$row->{$nontres}}
+        }
         push @{$rrows[-1]}, [@data]
     }
     last unless $all;
 }
 
 my $table = Text::Table->new("User", \" | ", "Account", \" | ",
-                             map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %tres,
+                             (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %tres),
+                             (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %nontres),
                             );
 
 my @seps = 0;
