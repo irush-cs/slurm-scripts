@@ -261,7 +261,7 @@ sub parse_list {
 
 =head2 split_gres
 
- $results = split_gres($gres, [$prev])
+ $results = split_gres($gres, [$prev], [options])
 
 Splits a gres string ($gres) to a hash ($results) for gres keys to values.
 
@@ -273,6 +273,18 @@ properly and converted to megabytes; unknown strings will be concatenated with
 ",".
 
 Tres is also supported, i.e. $gres can have either "key:value" or "key=value".
+
+Available options:
+
+=over
+
+=over
+
+=item type - if "string" treats every value as string. Good for non countable entries.
+
+=back
+
+=back
 
 Examples:
 
@@ -286,7 +298,13 @@ Examples:
 sub split_gres {
     my $input = shift;
     my $gres = shift || {};
+    if (ref $gres ne "HASH") {
+        unshift @_, $gres;
+        $gres = {};
+    }
+    my %args = @_;
     my $sep = ":";
+    my $type = $args{type} // "type";
 
     # for now, ignore socket binding
     $input =~ s/\(S:[-\d]+?\)//g;
@@ -304,7 +322,7 @@ sub split_gres {
         $g =~ s/:no_consume:/:/;
         $g =~ s/:no_consume$//;
 
-        $g = "$g${sep}1" if index($g, $sep) < 0 or $g !~ m/${sep}\d/;
+        $g = "$g${sep}1" if index($g, $sep) < 0 or ($type ne "string" and $g !~ m/${sep}\d/);
         my ($t, $v, $r) = split /\Q${sep}\E/, $g;
         $v = $r if ($v !~ m/^\d/ and $r and $r =~ m/^\d/);
         if ($v =~ m/^\d+$/) {

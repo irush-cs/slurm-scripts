@@ -25,7 +25,10 @@ my %tres = (
             "cpu=1,mem=300M,node=1,billing=2" => {cpu => 1, mem => "300M", node => 1, billing => 2},
             "cpu=16,mem=16G,node=2,billing=16,gres/gpu=2,license/interactive=1" => {cpu => 16, mem => "16384M", node => 2, billing => 16, "gres/gpu" => 2, "license/interactive" => 1},
            );
-my $alltres = {cpu => 18, mem => "18732M", node => 4, "gres/gpu" => 3, billing => 19, "license/interactive" => 1},
+my $alltres = {cpu => 18, mem => "18732M", node => 4, "gres/gpu" => 3, billing => 19, "license/interactive" => 1};
+
+my %assoc = ("cpu=194(4),mem=1052521(10240),energy=N(0),node=N(1),billing=N(4),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=12(4),license/interactive=N(0)" => {cpu => "194(4)", mem => "1052521(10240)", energy => "N(0)", node => "N(1)", billing => "N(4)", "fs/disk" => "N(0)", vmem => "N(0)", pages => "N(0)", "gres/gpu" => "12(4)", "license/interactive" => "N(0)"},
+            );
 
 my $all = {};
 foreach my $gres (keys %gres) {
@@ -42,5 +45,10 @@ foreach my $tres (keys %tres) {
     is_deeply($results, $tres{$tres}, "TRES: \"$tres\"");
 }
 is_deeply($all, $alltres, "All TRES combined");
+
+foreach my $assoc (keys %assoc) {
+    my $results = split_gres($assoc, type => 'string');
+    is_deeply($results, $assoc{$assoc}, "ASSOC: \"$assoc\"");
+}
 
 done_testing();
