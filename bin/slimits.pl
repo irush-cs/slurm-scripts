@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use List::Util qw(max);
+use List::Util qw(max min);
 use Text::Table;
 use Getopt::Long;
 
@@ -23,9 +23,11 @@ use cshuji::Slurm qw(split_gres mb2string);
 my $user = getpwuid($<);
 my $all = 0;
 my $long;
+my $avail;
 unless (GetOptions("u|user=s" => \$user,
                    "a|all+"   => \$all,
                    "l|long!"  => \$long,
+                   "avail!"   => \$avail,
                   )) {
     print STDERR "slimits [options]\n";
     print STDERR "Options:\n";
@@ -33,6 +35,7 @@ unless (GetOptions("u|user=s" => \$user,
     print STDERR "  -a        - show all accounts instead of just default\n";
     print STDERR "  -l        - show all attributes, even without limits\n";
     print STDERR "  -aa       - show all accounts including which can't run\n";
+    print STDERR "  --avail   - show calculated availability\n";
     exit 1;
 }
 my $uid = getpwnam($user);
@@ -58,7 +61,7 @@ foreach my $assoc (@assocs) {
         if ($grptres->{$tres} =~ m/(.*)\((.*)\)/) {
             $assoc->{_GrpTRES}{Usage}{$tres} = $2;
             $assoc->{_GrpTRES}{Limit}{$tres} = $1;
-            if ($memtres{$tres}) {
+            if ($memtres{$tres} and not $avail) {
                 foreach my $t (qw(Usage Limit)) {
                     if ($assoc->{_GrpTRES}{$t}{$tres} =~ m/^\d+$/) {
                         $assoc->{_GrpTRES}{$t}{$tres} = mb2string($assoc->{_GrpTRES}{$t}{$tres});
@@ -141,13 +144,22 @@ unless ($long) {
 my @rows;
 foreach my $entries (@entries) {
     push @rows, [];
+    if ($avail) {
+        foreach my $tres (sort keys %tres, sort keys %nontres) {
+            my $limit = "N";
+            foreach my $row (reverse @$entries) {
+                if ($row->{$tres}[1] ne "N") {
+                    my $limit2 = $row->{$tres}[1] - $row->{$tres}[0];
+                    $limit = min(($limit eq "N" ? $limit2 : $limit), $limit2);
+                }
+                $row->{"${tres}-avail"} = ($memtres{$tres} and $limit =~ m/^\d+$/) ? mb2string($limit) : $limit;
+            }
+        }
+    }
     foreach my $row (@$entries) {
         my @data = ($row->{User}, $row->{Account});
-        foreach my $tres (sort keys %tres) {
-            push @data, sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}}
-        }
-        foreach my $nontres (sort keys %nontres) {
-            push @data, sprintf "\%s / \%$tlength{$nontres}s", @{$row->{$nontres}}
+        foreach my $tres ((sort keys %tres), (sort keys %nontres)) {
+            push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
         }
         push @{$rows[-1]}, [@data]
     }
