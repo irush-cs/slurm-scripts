@@ -18,7 +18,7 @@ BEGIN {
 $scriptdir = '.' unless (defined $scriptdir);
 use lib "$scriptdir/..";
 
-use cshuji::Slurm qw(split_gres);
+use cshuji::Slurm qw(split_gres mb2string);
 
 my $user = getpwuid($<);
 my $all = 0;
@@ -38,7 +38,10 @@ unless (GetOptions("u|user=s" => \$user,
 my $uid = getpwnam($user);
 my %trestorun = (cpu => 1,
                  MaxSubmitJobs => 1,
+                 mem => 1,
                 );
+my %memtres = (mem => 1,
+              );
 
 my %tres;
 my %nontres = (MaxSubmitJobs => 1,
@@ -55,6 +58,13 @@ foreach my $assoc (@assocs) {
         if ($grptres->{$tres} =~ m/(.*)\((.*)\)/) {
             $assoc->{_GrpTRES}{Usage}{$tres} = $2;
             $assoc->{_GrpTRES}{Limit}{$tres} = $1;
+            if ($memtres{$tres}) {
+                foreach my $t (qw(Usage Limit)) {
+                    if ($assoc->{_GrpTRES}{$t}{$tres} =~ m/^\d+$/) {
+                        $assoc->{_GrpTRES}{$t}{$tres} = mb2string($assoc->{_GrpTRES}{$t}{$tres});
+                    }
+                }
+            }
         } else {
             print STDERR "Warning: Don't know how to handle \"$tres\" limit of $grptres->{$tres}\n";
             next;
@@ -134,7 +144,7 @@ foreach my $entries (@entries) {
     foreach my $row (@$entries) {
         my @data = ($row->{User}, $row->{Account});
         foreach my $tres (sort keys %tres) {
-            push @data, sprintf "\%i / \%$tlength{$tres}s", @{$row->{$tres}}
+            push @data, sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}}
         }
         foreach my $nontres (sort keys %nontres) {
             push @data, sprintf "\%s / \%$tlength{$nontres}s", @{$row->{$nontres}}
