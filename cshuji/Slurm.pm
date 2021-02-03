@@ -119,6 +119,7 @@ sub parse_scontrol_show {
         next if $line =~ m/^ *$/;
         next if $line eq "Current Association Manager state";
         next if $line eq "Association Records";
+        next if $line eq "No associations currently cached in Slurm.";
 
         # new entry
         if ($line =~ m/^[^ ]/) {
