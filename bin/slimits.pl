@@ -21,24 +21,30 @@ use lib "$scriptdir/..";
 use cshuji::Slurm qw(split_gres mb2string);
 
 my $user = getpwuid($<);
+my $in_user;
 my $all = 0;
 my $long;
 my $avail;
-unless (GetOptions("u|user=s" => \$user,
-                   "a|all+"   => \$all,
-                   "l|long!"  => \$long,
-                   "avail!"   => \$avail,
+my $account;
+unless (GetOptions("u|user=s"    => \$in_user,
+                   "a|all+"      => \$all,
+                   "l|long!"     => \$long,
+                   "avail!"      => \$avail,
+                   "A|account=s" => \$account,
                   )) {
     print STDERR "slimits [options]\n";
     print STDERR "Options:\n";
-    print STDERR "  -u <user> - check for <user> instead of current user\n";
-    print STDERR "  -a        - show all accounts instead of just default\n";
-    print STDERR "  -l        - show all attributes, even without limits\n";
-    print STDERR "  -aa       - show all accounts including which can't run\n";
-    print STDERR "  --avail   - show calculated availability\n";
+    print STDERR "  -u <user>    - check for <user> instead of current user\n";
+    print STDERR "  -A <account> - show limits of all users in <account>\n";
+    print STDERR "  -a           - show all accounts instead of just default\n";
+    print STDERR "  -l           - show all attributes, even without limits\n";
+    print STDERR "  -aa          - show all accounts including which can't run\n";
+    print STDERR "  --avail      - show calculated availability\n";
     exit 1;
 }
+$user = $in_user if $in_user;
 my $uid = getpwnam($user);
+$avail = 0 if $account;
 my %trestorun = (cpu => 1,
                  MaxSubmitJobs => 1,
                  mem => 1,
@@ -50,6 +56,18 @@ my %tres;
 my %nontres = (MaxSubmitJobs => 1,
               );
 my @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
+if ($account) {
+    $all = 2 if $all < 2;
+    if ($in_user) {
+        # account and user, just grep the proper account
+        @assocs = grep {not $_->{UserName} or $_->{Account} eq $account} @assocs;
+        $account = undef;
+    } else {
+        # with account, needs the non user accounts from the basic user account (any user will do)
+        @assocs = grep {not $_->{UserName}} @assocs;
+        push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$account`], type => "list")};
+    }
+}
 foreach my $assoc (@assocs) {
     $assoc->{_ParentAccount} = $assoc->{ParentAccount} =~ s/\(.*\)$//r;
     $assoc->{_UserName} = $assoc->{UserName} =~ s/\(.*\)$//r;
@@ -88,16 +106,24 @@ foreach my $assoc (@assocs) {
 }
 
 # get direct accounts
-my @accounts = grep {$_->{UserName} eq "$user($uid)"} @assocs;
+my @accounts;
+if ($account) {
+    @accounts = grep {$_->{UserName}} @assocs;
 
-# default first
-@accounts = sort {$a->{DefAssoc} ne $b->{DefAssoc} ? $b->{DefAssoc} eq "Yes" : $a->{Account} cmp $b->{Account}} @accounts;
+    # sort by users
+    @accounts = sort {$a->{UserName} cmp $b->{UserName}} @accounts;
+} else {
+    @accounts = grep {$_->{UserName} eq "$user($uid)"} @assocs;
+
+    # default first
+    @accounts = sort {$a->{DefAssoc} ne $b->{DefAssoc} ? $b->{DefAssoc} eq "Yes" : $a->{Account} cmp $b->{Account}} @accounts;
+}
 
 my %haslimits;
 my @entries;
 my %tlength;
 ACCOUNT:
-foreach my $assoc (@accounts) {
+while (my $assoc = shift @accounts) {
     my @rows;
     do {
         my %entry;
@@ -119,7 +145,11 @@ foreach my $assoc (@accounts) {
 
         # if user, get generic account, otherwise get parent account (with or without user)
         if ($assoc->{UserName}) {
-            ($assoc) = grep {$_->{Account} eq $assoc->{Account} and not $_->{UserName}} @assocs;
+            if ($account and @accounts) {
+                $assoc = shift @accounts;
+            } else {
+                ($assoc) = grep {$_->{Account} eq $assoc->{Account} and not $_->{UserName}} @assocs;
+            }
         } elsif ($assoc->{_ParentAccount}) {
             my ($assoc1) = grep {$_->{Account} eq $assoc->{_ParentAccount} and $_->{UserName}} @assocs;
             if ($assoc1) {
