@@ -48,6 +48,7 @@ $avail = 0 if $account;
 my %trestorun = (cpu => 1,
                  MaxSubmitJobs => 1,
                  mem => 1,
+                 MaxJobs => 1,
                 );
 my %memtres = (mem => 1,
               );
@@ -55,6 +56,7 @@ my %memtres = (mem => 1,
 my %tres;
 my %trespj;
 my %nontres = (MaxSubmitJobs => 1,
+               MaxJobs => 1,
               );
 my @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
 if ($account) {
