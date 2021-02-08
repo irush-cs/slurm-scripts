@@ -53,6 +53,7 @@ my %memtres = (mem => 1,
               );
 
 my %tres;
+my %trespj;
 my %nontres = (MaxSubmitJobs => 1,
               );
 my @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
@@ -71,6 +72,8 @@ if ($account) {
 foreach my $assoc (@assocs) {
     $assoc->{_ParentAccount} = $assoc->{ParentAccount} =~ s/\(.*\)$//r;
     $assoc->{_UserName} = $assoc->{UserName} =~ s/\(.*\)$//r;
+
+    # GrpTRES
     my $grptres = split_gres($assoc->{GrpTRES}, type => "string");
     $assoc->{_GrpTRES} = {Limit => {},
                           Usage => {},
@@ -95,6 +98,15 @@ foreach my $assoc (@assocs) {
     $assoc->{_nontres} = {Limit => {},
                           Usage => {},
                          };
+
+    # MaxTRESPJ
+    $assoc->{_MaxTRESPJ} = split_gres($assoc->{MaxTRESPJ});
+    @trespj{keys %{$assoc->{_MaxTRESPJ}}} = keys %{$assoc->{_MaxTRESPJ}};
+    foreach my $tres (keys %trespj) {
+        $assoc->{_MaxTRESPJ}{$tres} = mb2string($assoc->{_MaxTRESPJ}{$tres}) if $assoc->{_MaxTRESPJ}{$tres} and $memtres{$tres};
+    }
+
+    # non tres
     foreach my $nontres (keys %nontres) {
         if (($assoc->{$nontres} or "N(N)") =~ m/(.*)\((.*)\)/) {
             $assoc->{_nontres}{Usage}{$nontres} = $2;
@@ -119,6 +131,9 @@ if ($account) {
     @accounts = sort {$a->{DefAssoc} ne $b->{DefAssoc} ? $b->{DefAssoc} eq "Yes" : $a->{Account} cmp $b->{Account}} @accounts;
 }
 
+# build table
+# haslimits - if tres has limit anywhere (will be deleted otherwise unless $long)
+# entries - list of list hashes (list ref per account), internal list - hashes of rows
 my %haslimits;
 my @entries;
 my %tlength;
@@ -135,6 +150,10 @@ while (my $assoc = shift @accounts) {
             next ACCOUNT if ($all < 2 and exists $trestorun{$tres} and $entry{$tres}[1] eq "0");
             $haslimits{$tres} ||= $entry{$tres}[1] ne "N";
         }
+        foreach my $tres (sort keys %trespj) {
+            $entry{"${tres}pj"} = $assoc->{_MaxTRESPJ}{$tres} // "N";
+            $haslimits{"${tres}pj"} ||= $entry{"${tres}pj"} ne "N";
+        }
         foreach my $nontres (sort keys %nontres) {
             $entry{$nontres} = [$assoc->{_nontres}{Usage}{$nontres}, $assoc->{_nontres}{Limit}{$nontres}];
             $tlength{$nontres} = max($tlength{$nontres} // 0, length($entry{$nontres}[1]));
@@ -143,6 +162,7 @@ while (my $assoc = shift @accounts) {
         }
         push @rows, {%entry};
 
+        # find next row in this account
         # if user, get generic account, otherwise get parent account (with or without user)
         if ($assoc->{UserName}) {
             if ($account and @accounts) {
@@ -168,9 +188,12 @@ while (my $assoc = shift @accounts) {
 
 unless ($long) {
     delete @tres{grep {not $haslimits{$_}} keys %haslimits};
+    delete @trespj{map {s/pj$//r} grep {not $haslimits{$_}} keys %haslimits};
     delete @nontres{grep {not $haslimits{$_}} keys %haslimits};
 }
 
+# rows - the actual final rows, list of list ref (per account like entries)
+# Calculate available resources (if needed)
 my @rows;
 foreach my $entries (@entries) {
     push @rows, [];
@@ -188,7 +211,13 @@ foreach my $entries (@entries) {
     }
     foreach my $row (@$entries) {
         my @data = ($row->{User}, $row->{Account});
-        foreach my $tres ((sort keys %tres), (sort keys %nontres)) {
+        foreach my $tres (sort keys %tres) {
+            push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
+        }
+        foreach my $tres (sort keys %trespj) {
+            push @data, $row->{"${tres}pj"};
+        }
+        foreach my $tres (sort keys %nontres) {
             push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
         }
         push @{$rows[-1]}, [@data]
@@ -197,6 +226,7 @@ foreach my $entries (@entries) {
 
 my $table = Text::Table->new("User", \" | ", "Account", \" | ",
                              (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %tres),
+                             (map {{title => "$_ pj", align => "right", align_title => "right"}, \" | "} sort keys %trespj),
                              (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %nontres),
                             );
 
