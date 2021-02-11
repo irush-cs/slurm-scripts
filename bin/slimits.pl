@@ -20,22 +20,27 @@ use lib "$scriptdir/..";
 
 use cshuji::Slurm qw(split_gres mb2string);
 
+@ARGV = map {s/^-M([^=].*)/--cluster=$1/r} @ARGV;
+
 my $user = getpwuid($<);
 my $in_user;
 my $all = 0;
 my $long;
 my $avail;
 my $account;
+my $cluster;
 unless (GetOptions("u|user=s"    => \$in_user,
                    "a|all+"      => \$all,
                    "l|long!"     => \$long,
                    "avail!"      => \$avail,
                    "A|account=s" => \$account,
+                   "M|cluster=s" => \$cluster,
                   )) {
     print STDERR "slimits [options]\n";
     print STDERR "Options:\n";
     print STDERR "  -u <user>    - check for <user> instead of current user\n";
     print STDERR "  -A <account> - show limits of all users in <account>\n";
+    print STDERR "  -M <cluster> - show limits on cluster <cluster>\n";
     print STDERR "  -a           - show all accounts instead of just default\n";
     print STDERR "  -l           - show all attributes, even without limits\n";
     print STDERR "  -aa          - show all accounts including which can't run\n";
@@ -52,6 +57,10 @@ my %trestorun = (cpu => 1,
                 );
 my %memtres = (mem => 1,
               );
+
+if ($cluster) {
+    cshuji::Slurm::set_cluster($cluster);
+}
 
 my %tres;
 my %trespj;
