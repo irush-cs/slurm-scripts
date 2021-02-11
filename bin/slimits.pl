@@ -54,6 +54,7 @@ my %trestorun = (cpu => 1,
                  MaxSubmitJobs => 1,
                  mem => 1,
                  MaxJobs => 1,
+                 GrpSubmitJobs => 1,
                 );
 my %memtres = (mem => 1,
               );
@@ -66,6 +67,7 @@ my %tres;
 my %trespj;
 my %nontres = (MaxSubmitJobs => 1,
                MaxJobs => 1,
+               GrpSubmitJobs => 1,
               );
 my %useronlytres = (MaxSubmitJobs => 1,
                     MaxJobs => 1,
