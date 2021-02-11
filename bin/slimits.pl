@@ -67,6 +67,9 @@ my %trespj;
 my %nontres = (MaxSubmitJobs => 1,
                MaxJobs => 1,
               );
+my %useronlytres = (MaxSubmitJobs => 1,
+                    MaxJobs => 1,
+                   );
 my @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
 if ($account) {
     $all = 2 if $all < 2;
@@ -216,6 +219,7 @@ foreach my $entries (@entries) {
                     my $limit2 = $row->{$tres}[1] - $row->{$tres}[0];
                     $limit = min(($limit eq "N" ? $limit2 : $limit), $limit2);
                 }
+                $limit = "N" if ($useronlytres{$tres} and not $row->{User});
                 $row->{"${tres}-avail"} = ($memtres{$tres} and $limit =~ m/^\d+$/) ? mb2string($limit) : $limit;
             }
         }
@@ -229,7 +233,11 @@ foreach my $entries (@entries) {
             push @data, $row->{"${tres}pj"};
         }
         foreach my $tres (sort keys %nontres) {
-            push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
+            if ($useronlytres{$tres} and not $row->{User}) {
+                push @data, "";
+            } else {
+                push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
+            }
         }
         push @{$rows[-1]}, [@data]
     }
