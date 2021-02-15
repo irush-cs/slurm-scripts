@@ -45,6 +45,28 @@ unless (GetOptions("u|user=s"    => \$in_user,
     print STDERR "  -l           - show all attributes, even without limits\n";
     print STDERR "  -aa          - show all accounts including which can't run\n";
     print STDERR "  --avail      - show calculated availability\n";
+    print STDERR "
+
+Each \"fat\" row is a single account with all its parents. An account might not
+have reached a limit but its parent might have. Each line shows the specific
+limits of a user and/or an account.
+
+Each column shows the limits of a particular resource. Some rows have two
+numbers in the format '<used> / <limit>'. If the limit it 'N', there is no
+limit (but there could be a limit on a parent account). If the limit is '0',
+this resource cannot be used.
+
+Resources:
+
+cpu, mem, gres/gpu          - The used and limits of CPUs, memory and GPUs.
+license/interactive         - Number of allowed interactive sessions
+cpu pj, mem pj, gres/gpu pj - Limits of CPUs, memory and GPUs per job.
+GrpSubmitJobs               - Total number of jobs (pending and running)
+                              allowed by the account and its children.
+MaxSubmitJobs               - Maximum number of jobs (pending and runnig).
+MaxJobs                     - Maximum number of running jobs.
+";
+
     exit 1;
 }
 $user = $in_user if $in_user;
