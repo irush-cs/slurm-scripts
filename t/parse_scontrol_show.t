@@ -704,6 +704,132 @@ my @assoc_mgr = ({
                  },
 );
 
+
+my $assoc_mgr_qos = "Current Association Manager state
+
+QOS Records
+
+QOS=myqos(35)
+    UsageRaw=1587.040000
+    GrpJobs=N(0) GrpJobsAccrue=N(0) GrpSubmitJobs=N(0) GrpWall=N(31.82)
+    GrpTRES=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    GrpTRESMins=cpu=N(203),mem=N(32580),energy=N(0),node=N(31),billing=20(20),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(5)
+    GrpTRESRunMins=cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh= 
+    MinTRESPJ=
+    PreemptMode=OFF
+    Priority=1000
+    Account Limits
+        No Accounts
+    User Limits
+        No Users
+
+QOS=normal(1)
+    UsageRaw=3210031296.886358
+    GrpJobs=N(211) GrpJobsAccrue=N(204) GrpSubmitJobs=N(415) GrpWall=N(617108.05)
+    GrpTRES=cpu=N(2246),mem=N(7393968),energy=N(0),node=N(21),billing=N(421),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(30),license/interactive=N(3)
+    GrpTRESMins=cpu=N(15539959),mem=N(98008759410),energy=N(0),node=N(739698),billing=N(53254238),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(290756),license/interactive=N(29332)
+    GrpTRESRunMins=cpu=N(6432334),mem=N(25070696789),energy=N(0),node=N(632527),billing=N(1497662),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(136010),license/interactive=N(2415)
+    MaxWallPJ=
+    MaxTRESPJ=
+    MaxTRESPN=
+    MaxTRESMinsPJ=
+    MinPrioThresh= 
+    MinTRESPJ=cpu=1
+    PreemptMode=OFF
+    Priority=1000
+    Account Limits
+      account1
+        MaxJobsPA=N(3) MaxJobsAccruePA=N(0) MaxSubmitJobsPA=N(3)
+        MaxTRESPA=cpu=N(424),mem=N(580000),energy=N(0),node=N(8),billing=N(53),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+      account2
+        MaxJobsPA=N(1) MaxJobsAccruePA=N(0) MaxSubmitJobsPA=N(1)
+        MaxTRESPA=cpu=N(20),mem=N(163840),energy=N(0),node=N(1),billing=N(2),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+    User Limits
+      123456
+        MaxJobsPU=N(3) MaxJobsAccruePU=N(0) MaxSubmitJobsPU=N(3)
+        MaxTRESPU=cpu=N(424),mem=N(580000),energy=N(0),node=N(8),billing=N(53),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+      123457
+        MaxJobsPU=N(1) MaxJobsAccruePU=N(0) MaxSubmitJobsPU=N(1)
+        MaxTRESPU=cpu=N(20),mem=N(163840),energy=N(0),node=N(1),billing=N(2),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)
+
+";
+
+my @assoc_mgr_qos = ({
+                      "QOS" => "myqos(35)",
+                      "UsageRaw" => "1587.040000",
+                      "GrpJobs" => "N(0)",
+                      "GrpJobsAccrue" => "N(0)",
+                      "GrpSubmitJobs" => "N(0)",
+                      "GrpWall" => "N(31.82)",
+                      "GrpTRES" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                      "GrpTRESMins" => "cpu=N(203),mem=N(32580),energy=N(0),node=N(31),billing=20(20),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(5)",
+                      "GrpTRESRunMins" => "cpu=N(0),mem=N(0),energy=N(0),node=N(0),billing=N(0),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                      "MaxWallPJ" => "",
+                      "MaxTRESPJ" => "",
+                      "MaxTRESPN" => "",
+                      "MaxTRESMinsPJ" => "",
+                      "MinPrioThresh" => "",
+                      "MinTRESPJ" => "",
+                      "PreemptMode" => "OFF",
+                      "Priority" => "1000",
+                      "Account Limits" => {"No Accounts" => {}},
+                      "User Limits" => {"No Users" => {}},
+                     },
+                     {
+                      "QOS" => "normal(1)",
+                      "UsageRaw" => "3210031296.886358",
+                      "GrpJobs" => "N(211)",
+                      "GrpJobsAccrue" => "N(204)",
+                      "GrpSubmitJobs" => "N(415)",
+                      "GrpWall" => "N(617108.05)",
+                      "GrpTRES" => "cpu=N(2246),mem=N(7393968),energy=N(0),node=N(21),billing=N(421),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(30),license/interactive=N(3)",
+                      "GrpTRESMins" => "cpu=N(15539959),mem=N(98008759410),energy=N(0),node=N(739698),billing=N(53254238),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(290756),license/interactive=N(29332)",
+                      "GrpTRESRunMins" => "cpu=N(6432334),mem=N(25070696789),energy=N(0),node=N(632527),billing=N(1497662),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(136010),license/interactive=N(2415)",
+                      "MaxWallPJ" => "",
+                      "MaxTRESPJ" => "",
+                      "MaxTRESPN" => "",
+                      "MaxTRESMinsPJ" => "",
+                      "MinPrioThresh" => "",
+                      "MinTRESPJ" => "cpu=1",
+                      "PreemptMode" => "OFF",
+                      "Priority" => "1000",
+                      "Account Limits" => {
+                                           "account1" => {
+                                                          "MaxJobsPA" => "N(3)",
+                                                          "MaxJobsAccruePA" => "N(0)",
+                                                          "MaxSubmitJobsPA" => "N(3)",
+                                                          "MaxTRESPA" => "cpu=N(424),mem=N(580000),energy=N(0),node=N(8),billing=N(53),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)"
+                                                         },
+                                           "account2" => {
+                                                          "MaxJobsPA" => "N(1)",
+                                                          "MaxJobsAccruePA" => "N(0)",
+                                                          "MaxSubmitJobsPA" => "N(1)",
+                                                          "MaxTRESPA" => "cpu=N(20),mem=N(163840),energy=N(0),node=N(1),billing=N(2),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                                                         },
+                                          },
+                      "User Limits" => {
+                                        "123456" => {
+                                                     "MaxJobsPU" => "N(3)",
+                                                     "MaxJobsAccruePU" => "N(0)",
+                                                     "MaxSubmitJobsPU" => "N(3)",
+                                                     "MaxTRESPU" => "cpu=N(424),mem=N(580000),energy=N(0),node=N(8),billing=N(53),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                                                    },
+                                        "123457" => {
+                                                     "MaxJobsPU" => "N(1)",
+                                                     "MaxJobsAccruePU" => "N(0)",
+                                                     "MaxSubmitJobsPU" => "N(1)",
+                                                     "MaxTRESPU" => "cpu=N(20),mem=N(163840),energy=N(0),node=N(1),billing=N(2),fs/disk=N(0),vmem=N(0),pages=N(0),gres/gpu=N(0),license/interactive=N(0)",
+                                                    },
+                                       },
+
+                     },
+);
+
 my $results = parse_scontrol_show([split /\n/, $jobs]);
 is_deeply($results, \%jobs);
 
@@ -715,5 +841,8 @@ is_deeply($results, \%partitions);
 
 $results = parse_scontrol_show([split /\n/, $assoc_mgr], type => "list");
 is_deeply($results, \@assoc_mgr);
+
+$results = parse_scontrol_show([split /\n/, $assoc_mgr_qos], type => "list");
+is_deeply($results, \@assoc_mgr_qos);
 
 done_testing();

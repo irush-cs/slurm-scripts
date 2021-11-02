@@ -71,6 +71,9 @@ Converts the lines returned by "scontrol show <something>" to a hash ref.
 Any additional data (such as the node resources of jobs), is in the "_DETAILS"
 key of the element.
 
+Hashed subsections are created e.g. for "Account Limits" in "scontrol show
+assoc_mgr flags=qos"
+
 Available options:
 
 =over
@@ -112,6 +115,7 @@ sub parse_scontrol_show {
     my $reskey;
     my $indent;
     my $special;
+    my @subsections; # e.g. in assoc_mgr flags=qos
 
     foreach my $line (@$lines) {
         chomp($line);
@@ -119,10 +123,20 @@ sub parse_scontrol_show {
         next if $line =~ m/^ *$/;
         next if $line eq "Current Association Manager state";
         next if $line eq "Association Records";
+        next if $line eq "QOS Records";
         next if $line eq "No associations currently cached in Slurm.";
 
         # new entry
         if ($line =~ m/^[^ ]/) {
+            while (@subsections) {
+                my $subsection = pop @subsections;
+                if (@subsections) {
+                    $subsections[-1]->{data}{$subsection->{name}} = $subsection->{data};
+                } else {
+                    $current{$subsection->{name}} = $subsection->{data};
+                }
+            }
+
             if (not $listres) {
                 my ($key) = ($line =~ m/^([^=]+)/);
 
@@ -156,6 +170,28 @@ sub parse_scontrol_show {
         my $detailed = (defined $indent and $line =~ m/^\Q${indent}\E /);
         my $first = 1;
 
+        # old subsection
+        while (@subsections) {
+            my $subsection = $subsections[-1];
+            if ($line !~ m/^\Q$subsection->{indent} \E/) {
+                pop @subsections;
+                if (@subsections) {
+                    $subsections[-1]->{data}{$subsection->{name}} = $subsection->{data};
+                } else {
+                    $current{$subsection->{name}} = $subsection->{data};
+                }
+                next;
+            }
+            last;
+        }
+
+        # new subsection
+        if ($line !~ m/=/) {
+            $line =~ m/^( +)(.*)/;
+            push @subsections, {indent => $1, name => $2, data => {}};
+            next;
+        }
+
         while ($line) {
             my ($key, $value);
             $line =~ s/^\s*|\s*$//g;
@@ -174,12 +210,25 @@ sub parse_scontrol_show {
             $first = 0;
         }
 
-        # details array
-        if ($detailed) {
+        # subsections or details array
+        if (@subsections) {
+            my %data = %{$subsections[-1]->{data}};
+            @data{keys %lineparams} = (values %lineparams);
+            $subsections[-1]->{data} = {%data};
+        } elsif ($detailed) {
             $current{_DETAILS} //= [];
             push @{$current{_DETAILS}}, {%lineparams};
         } else {
             @current{keys %lineparams} = (values %lineparams);
+        }
+    }
+
+    while (@subsections) {
+        my $subsection = pop @subsections;
+        if (@subsections) {
+            $subsections[-1]->{data}{$subsection->{name}} = $subsection->{data};
+        } else {
+            $current{$subsection->{name}} = $subsection->{data};
         }
     }
 
