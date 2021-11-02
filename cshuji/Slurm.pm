@@ -31,6 +31,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_reservations
                     get_accounts
                     get_associations
+                    get_qos
                     parse_conf
                     time2sec
                     string2mb
@@ -816,6 +817,127 @@ sub get_accounts {
     $accounts = [grep {$_->{User} eq ''} @$accounts];
 
     return $accounts;
+}
+
+
+=head2 get_qos
+
+ $results = get_qos()
+
+Get hash ref of qos hash refs by calling "sacctmgr list qos" using the
+I<parse_list> function; and "scontrol show assoc_mgr flags=qos" using the
+I<scontrol_parse_show> function. The assoc_mgr output is in the _current field
+
+The returned fields are:
+
+=over
+
+=over
+
+=item Flags
+
+=item GraceTime
+
+=item GrpJobs
+
+=item GrpSubmit
+
+=item GrpTRES
+
+=item GrpTRESMins
+
+=item GrpTRESRunMins
+
+=item GrpWall
+
+=item MaxJobsPA
+
+=item MaxJobsPU
+
+=item MaxSubmitPA
+
+=item MaxSubmitPU
+
+=item MaxTRES
+
+=item MaxTRESMins
+
+=item MaxTRESPA
+
+=item MaxTRESPU
+
+=item MaxTRESPerNode
+
+=item MaxWall
+
+=item MinTRES
+
+=item Name
+
+=item Preempt
+
+=item PreemptExemptTime
+
+=item PreemptMode
+
+=item Priority
+
+=item UsageFactor
+
+=item UsageThres
+
+=item _current
+
+=item _Flags          - List ref of flags
+
+=item _GrpTRESMins    - gres split of GrpTRESMins
+
+=back
+
+=back
+
+=cut
+
+sub get_qos {
+    my %args = @_;
+    my $acct_qos;
+    my $scontrol_qos;
+    my %qos;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_sacctmgr_output}) {
+        $acct_qos = parse_list($args{_sacctmgr_output});
+    } else {
+        $acct_qos = parse_list([`sacctmgr list qos -p`]);
+    }
+
+    if ($args{_scontrol_output}) {
+        $scontrol_qos = parse_scontrol_show($args{_scontrol_output}, type => 'list');
+    } else {
+        $scontrol_qos = parse_scontrol_show([`scontrol show assoc_mgr flags=qos`], type => 'list');
+    }
+
+    $acct_qos = {map {$_->{Name} => $_} @$acct_qos};
+    $scontrol_qos = {map {$_->{QOS} =~ m/(.*)\(/; $1 => $_} @$scontrol_qos};
+
+    foreach my $qos (values %$acct_qos) {
+        $qos->{_current} = $scontrol_qos->{$qos->{Name}};
+        $qos->{_Flags} = [sort split /,/, $qos->{Flags}];
+        $qos->{_GrpTRESMins} = split_gres($qos->{GrpTRESMins});
+        $qos->{_current}{_GrpTRESMins} = split_gres($qos->{_current}{GrpTRESMins}, type => "string");
+        foreach my $limit ("User Limits", "Account Limits") {
+            if ($qos->{_current}{$limit}
+                and scalar(keys %{$qos->{_current}{$limit}}) == 1
+                and (exists $qos->{_current}{$limit}{"No Accounts"}
+                     or exists $qos->{_current}{$limit}{"No Users"})) {
+                delete $qos->{_current}{$limit}{"No Accounts"};
+                delete $qos->{_current}{$limit}{"No Users"};
+            }
+        }
+        $qos{$qos->{Name}} = $qos;
+    }
+
+    return \%qos
 }
 
 
