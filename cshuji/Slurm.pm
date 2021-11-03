@@ -30,6 +30,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_nodes
                     get_reservations
                     get_accounts
+                    get_users
                     get_associations
                     get_qos
                     parse_conf
@@ -817,6 +818,51 @@ sub get_accounts {
     $accounts = [grep {$_->{User} eq ''} @$accounts];
 
     return $accounts;
+}
+
+
+=head2 get_users
+
+ $results = get_users()
+
+Get array ref of user hash refs by calling "sacctmgr list users" and
+using the I<parse_list> function.
+
+The returned fields are:
+
+=over
+
+=over
+
+=item User
+
+=item Cluster
+
+=item Def Acct
+
+=item Account
+
+=item Def QOS
+
+=back
+
+=back
+
+=cut
+
+sub get_users {
+
+    my %args = @_;
+    my $users;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_sacctmgr_output}) {
+        $users = parse_list($args{_sacctmgr_output});
+    } else {
+        $users = parse_list([`sacctmgr list users -s -p "format=user,cluster,defaultaccount,account,defaultqos"`]);
+    }
+
+    return $users;
 }
 
 
