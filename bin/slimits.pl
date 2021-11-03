@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Clone;
 use List::Util qw(max min);
 use Text::Table;
 use Getopt::Long;
@@ -29,18 +30,21 @@ my $long;
 my $avail;
 my $account;
 my $cluster;
+my $in_qos;
 unless (GetOptions("u|user=s"    => \$in_user,
                    "a|all+"      => \$all,
                    "l|long!"     => \$long,
                    "avail!"      => \$avail,
                    "A|account=s" => \$account,
                    "M|cluster=s" => \$cluster,
+                   "qos!"        => \$in_qos,
                   )) {
     print STDERR "slimits [options]\n";
     print STDERR "Options:\n";
     print STDERR "  -u <user>    - check for <user> instead of current user\n";
     print STDERR "  -A <account> - show limits of all users in <account>\n";
     print STDERR "  -M <cluster> - show limits on cluster <cluster>\n";
+    print STDERR "  --qos        - show QoS limits instead of current live usage\n";
     print STDERR "  -a           - show all accounts instead of just default\n";
     print STDERR "  -l           - show all attributes, even without limits\n";
     print STDERR "  -aa          - show all accounts including which can't run\n";
@@ -69,6 +73,11 @@ MaxJobs                     - Maximum number of running jobs.
 
     exit 1;
 }
+
+if ($account and $in_qos) {
+    print STDERR "Can't specify both --qos and --account\n";
+    exit 2;
+}
 $user = $in_user if $in_user;
 my $uid = getpwnam($user);
 $avail = 0 if $account;
@@ -83,10 +92,13 @@ my %memtres = (mem => 1,
 
 if ($cluster) {
     cshuji::Slurm::set_cluster($cluster);
+} else {
+    $cluster = cshuji::Slurm::get_config()->{ClusterName};
 }
 
 my %tres;
 my %trespj;
+my %tresmin;
 my %nontres = (MaxSubmitJobs => 1,
                MaxJobs => 1,
                GrpSubmitJobs => 1,
@@ -94,22 +106,69 @@ my %nontres = (MaxSubmitJobs => 1,
 my %useronlytres = (MaxSubmitJobs => 1,
                     MaxJobs => 1,
                    );
-my @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
-if ($account) {
-    $all = 2 if $all < 2;
-    if ($in_user) {
-        # account and user, just grep the proper account
-        @assocs = grep {not $_->{UserName} or $_->{Account} eq $account} @assocs;
-        $account = undef;
-    } else {
-        # with account, needs the non user accounts from the basic user account (any user will do)
-        @assocs = grep {not $_->{UserName}} @assocs;
-        push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$account`], type => "list")};
+
+my @assocs;
+if ($in_qos) {
+    my $qos = cshuji::Slurm::get_qos();
+    my $assocs = cshuji::Slurm::get_associations();
+    my $users = cshuji::Slurm::get_users();
+    my @acct_assocs = grep {$_->{Cluster} eq $cluster} @$assocs;
+    my @users = grep {$_->{User} eq $user and $_->{Cluster} eq $cluster} @$users;
+    my $defaccount = $users[0]{"Def Acct"};
+    my @accounts = ($defaccount);
+
+    # -aa - all accounts, keep default first;
+    if ($all > 1) {
+        my %accounts;
+        @accounts = map {$_->{Account}} @users;
+        @accounts{@accounts} = @accounts;
+        delete $accounts{$defaccount};
+        @accounts = ($defaccount, sort keys %accounts);
+    }
+    foreach my $account (@accounts) {
+        my @acct_assocs2 = grep {$_->{User} eq $user and $_->{Account} eq $account} @acct_assocs;
+        my $defqos = $acct_assocs2[0]->{"Def QOS"};
+        my @qos;
+        foreach my $assoc (@acct_assocs2) {
+            push @qos, (split /,/, $assoc->{QOS});
+        }
+        my %qos;
+        foreach my $q (@qos) {
+            # we'll clone because we pair them with user/account
+            $qos{$q} = Clone::clone($qos->{$q});
+            $qos{$q}{_UserName} = $user;
+            $qos{$q}{Account} = $account;
+            # this overrides the data...
+            $qos{$q}{GrpTRESMins} = $qos{$q}{_current}{GrpTRESMins};
+        }
+
+        # we'll sort them here, because we're per account
+        my @assocs2 = values %qos;
+        @assocs2 = sort {($a->{Name} eq $defqos) ? -1 : ($b->{Name} eq $defqos) ? 1 : ($a->{Name} cmp $b->{Name})} @assocs2;
+        push @assocs, @assocs2;
+    }
+
+} else {
+    @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
+    if ($account) {
+        $all = 2 if $all < 2;
+        if ($in_user) {
+            # account and user, just grep the proper account
+            @assocs = grep {not $_->{UserName} or $_->{Account} eq $account} @assocs;
+            $account = undef;
+        } else {
+            # with account, needs the non user accounts from the basic user account (any user will do)
+            @assocs = grep {not $_->{UserName}} @assocs;
+            push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$account`], type => "list")};
+        }
     }
 }
+
 foreach my $assoc (@assocs) {
-    $assoc->{_ParentAccount} = $assoc->{ParentAccount} =~ s/\(.*\)$//r;
-    $assoc->{_UserName} = $assoc->{UserName} =~ s/\(.*\)$//r;
+    unless ($in_qos) {
+        $assoc->{_ParentAccount} = $assoc->{ParentAccount} =~ s/\(.*\)$//r;
+        $assoc->{_UserName} = $assoc->{UserName} =~ s/\(.*\)$//r;
+    }
 
     # GrpTRES
     my $grptres = split_gres($assoc->{GrpTRES}, type => "string");
@@ -153,11 +212,30 @@ foreach my $assoc (@assocs) {
             print STDERR "Warning: Don't know how to handle \"$nontres\" limit of \"$assoc->{$nontres}\"\n";
         }
     }
+
+    # GrpTRESMins
+    my $grptresmin = split_gres($assoc->{GrpTRESMins}, type => "string");
+    $assoc->{_GrpTRESMins} = {Limit => {},
+                              Usage => {},
+                             };
+    foreach my $tresmin (keys %{$grptresmin}) {
+        if ($grptresmin->{$tresmin} =~ m/(.*)\((.*)\)/) {
+            $assoc->{_GrpTRESMins}{Usage}{$tresmin} = $2;
+            $assoc->{_GrpTRESMins}{Limit}{$tresmin} = $1;
+        } else {
+            print STDERR "Warning: Don't know how to handle \"$tresmin\" GrpTRESMins limit of $grptresmin->{$tresmin}\n";
+            next;
+        }
+        $tresmin{$tresmin} = $tresmin;
+    }
+
 }
 
 # get direct accounts
 my @accounts;
-if ($account) {
+if ($in_qos) {
+    @accounts = @assocs;
+} elsif ($account) {
     @accounts = grep {$_->{UserName}} @assocs;
 
     # sort by users
@@ -178,15 +256,27 @@ my %tlength;
 ACCOUNT:
 while (my $assoc = shift @accounts) {
     my @rows;
+    my $prevuser;
+    my $prevaccount;
     do {
         my %entry;
         $entry{User} = $assoc->{_UserName};
         $entry{Account} = $assoc->{Account};
+        $prevuser //= $entry{User};
+        $prevaccount //= $entry{Account};
+        if ($in_qos) {
+            $entry{QOS} = $assoc->{Name};
+        }
         foreach my $tres (sort keys %tres) {
             $entry{$tres} = [$assoc->{_GrpTRES}{Usage}{$tres}, $assoc->{_GrpTRES}{Limit}{$tres}];
             $tlength{$tres} = max($tlength{$tres} // 0, length($entry{$tres}[1]));
             next ACCOUNT if ($all < 2 and exists $trestorun{$tres} and $entry{$tres}[1] eq "0");
             $haslimits{$tres} ||= $entry{$tres}[1] ne "N";
+        }
+        foreach my $tres (sort keys %tresmin) {
+            $entry{"${tres}min"} = [$assoc->{_GrpTRESMins}{Usage}{$tres}, $assoc->{_GrpTRESMins}{Limit}{$tres}];
+            $tlength{"${tres}min"} = max($tlength{"${tres}min"} // 0, length($entry{"${tres}min"}[1]));
+            $haslimits{"${tres}min"} ||= $entry{"${tres}min"}[1] ne "N";
         }
         foreach my $tres (sort keys %trespj) {
             $entry{"${tres}pj"} = $assoc->{_MaxTRESPJ}{$tres} // "N";
@@ -200,32 +290,51 @@ while (my $assoc = shift @accounts) {
         }
         push @rows, {%entry};
 
-        # find next row in this account
-        # if user, get generic account, otherwise get parent account (with or without user)
-        if ($assoc->{UserName}) {
-            if ($account and @accounts) {
-                $assoc = shift @accounts;
+        # find next row in this account/qos
+        if ($in_qos) {
+            if ($all) {
+                if (@accounts
+                    and $accounts[0]{_UserName} eq $prevuser
+                    and $accounts[0]{Account} eq $prevaccount
+                   ) {
+                    $assoc = shift @accounts;
+                    $assoc->{_UserName} = "";
+                    $assoc->{Account} = "";
+                } else {
+                    $assoc = undef;
+                }
             } else {
-                ($assoc) = grep {$_->{Account} eq $assoc->{Account} and not $_->{UserName}} @assocs;
-            }
-        } elsif ($assoc->{_ParentAccount}) {
-            my ($assoc1) = grep {$_->{Account} eq $assoc->{_ParentAccount} and $_->{UserName}} @assocs;
-            if ($assoc1) {
-                $assoc = $assoc1;
-            } else {
-                ($assoc) = grep {$_->{Account} eq $assoc->{_ParentAccount} and not $_->{UserName}} @assocs;
+                $assoc = undef;
             }
         } else {
-            $assoc = undef;
+            # if user, get generic account, otherwise get parent account (with or without user)
+            if ($assoc->{UserName}) {
+                if ($account and @accounts) {
+                    $assoc = shift @accounts;
+                } else {
+                    ($assoc) = grep {$_->{Account} eq $assoc->{Account} and not $_->{UserName}} @assocs;
+                }
+            } elsif ($assoc->{_ParentAccount}) {
+                my ($assoc1) = grep {$_->{Account} eq $assoc->{_ParentAccount} and $_->{UserName}} @assocs;
+                if ($assoc1) {
+                    $assoc = $assoc1;
+                } else {
+                    ($assoc) = grep {$_->{Account} eq $assoc->{_ParentAccount} and not $_->{UserName}} @assocs;
+                }
+            } else {
+                $assoc = undef;
+            }
         }
     } while $assoc;
 
     push @entries, [@rows];
-    last unless $all;
+    last if ((not $in_qos and not $all)
+             or ($in_qos and $all <= 1));
 }
 
 unless ($long) {
     delete @tres{grep {not $haslimits{$_}} keys %haslimits};
+    delete @tresmin{map {s/min$//r} grep {not $haslimits{$_}} keys %haslimits};
     delete @trespj{map {s/pj$//r} grep {not $haslimits{$_}} keys %haslimits};
     delete @nontres{grep {not $haslimits{$_}} keys %haslimits};
 }
@@ -250,8 +359,14 @@ foreach my $entries (@entries) {
     }
     foreach my $row (@$entries) {
         my @data = ($row->{User}, $row->{Account});
+        if ($in_qos) {
+            push @data, $row->{QOS};
+        }
         foreach my $tres (sort keys %tres) {
             push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
+        }
+        foreach my $tres (sort keys %tresmin) {
+            push @data, sprintf "\%s / \%".$tlength{"${tres}min"}."s", @{$row->{"${tres}min"}};
         }
         foreach my $tres (sort keys %trespj) {
             push @data, $row->{"${tres}pj"};
@@ -268,7 +383,9 @@ foreach my $entries (@entries) {
 }
 
 my $table = Text::Table->new("User", \" | ", "Account", \" | ",
+                             ($in_qos ? ("QOS", \" | ") : ()),
                              (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %tres),
+                             (map {{title => "$_ min", align => "right", align_title => "right"}, \" | "} sort keys %tresmin),
                              (map {{title => "$_ pj", align => "right", align_title => "right"}, \" | "} sort keys %trespj),
                              (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %nontres),
                             );
