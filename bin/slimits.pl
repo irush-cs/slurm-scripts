@@ -28,14 +28,14 @@ my $in_user;
 my $all = 0;
 my $long;
 my $avail;
-my $account;
+my $in_account;
 my $cluster;
 my $in_qos;
 unless (GetOptions("u|user=s"    => \$in_user,
                    "a|all+"      => \$all,
                    "l|long!"     => \$long,
                    "avail!"      => \$avail,
-                   "A|account=s" => \$account,
+                   "A|account=s" => \$in_account,
                    "M|cluster=s" => \$cluster,
                    "qos!"        => \$in_qos,
                   )) {
@@ -74,13 +74,9 @@ MaxJobs                     - Maximum number of running jobs.
     exit 1;
 }
 
-if ($account and $in_qos) {
-    print STDERR "Can't specify both --qos and --account\n";
-    exit 2;
-}
 $user = $in_user if $in_user;
 my $uid = getpwnam($user);
-$avail = 0 if $account;
+$avail = 0 if $in_account;
 my %trestorun = (cpu => 1,
                  MaxSubmitJobs => 1,
                  mem => 1,
@@ -117,49 +113,57 @@ if ($in_qos) {
     my $defaccount = $users[0]{"Def Acct"};
     my @accounts = ($defaccount);
 
-    # -aa - all accounts, keep default first;
-    if ($all > 1) {
+    if ($in_account) {
+        @accounts = ($in_account);
+        @users = map {$_->{User}} grep {$_->{Cluster} eq $cluster and $_->{Account} eq $in_account} @$users;
+    } elsif ($all > 1) {
+        # -aa - all accounts, keep default first;
         my %accounts;
         @accounts = map {$_->{Account}} @users;
         @accounts{@accounts} = @accounts;
         delete $accounts{$defaccount};
         @accounts = ($defaccount, sort keys %accounts);
+        @users = ($user);
+    } else {
+        @users = ($user);
     }
     foreach my $account (@accounts) {
-        my @acct_assocs2 = grep {$_->{User} eq $user and $_->{Account} eq $account} @acct_assocs;
-        my $defqos = $acct_assocs2[0]->{"Def QOS"};
-        my @qos;
-        foreach my $assoc (@acct_assocs2) {
-            push @qos, (split /,/, $assoc->{QOS});
-        }
-        my %qos;
-        foreach my $q (@qos) {
-            # we'll clone because we pair them with user/account
-            $qos{$q} = Clone::clone($qos->{$q});
-            $qos{$q}{_UserName} = $user;
-            $qos{$q}{Account} = $account;
-            # this overrides the data...
-            $qos{$q}{GrpTRESMins} = $qos{$q}{_current}{GrpTRESMins};
-        }
+        foreach my $user (@users) {
+            my @acct_assocs2 = grep {$_->{User} eq $user and $_->{Account} eq $account} @acct_assocs;
+            my $defqos = $acct_assocs2[0]->{"Def QOS"};
+            my @qos;
+            foreach my $assoc (@acct_assocs2) {
+                push @qos, (split /,/, $assoc->{QOS});
+            }
+            my %qos;
+            foreach my $q (@qos) {
+                # we'll clone because we pair them with user/account
+                $qos{$q} = Clone::clone($qos->{$q});
+                $qos{$q}{_UserName} = $user;
+                $qos{$q}{Account} = $account;
+                # this overrides the data...
+                $qos{$q}{GrpTRESMins} = $qos{$q}{_current}{GrpTRESMins};
+            }
 
-        # we'll sort them here, because we're per account
-        my @assocs2 = values %qos;
-        @assocs2 = sort {($a->{Name} eq $defqos) ? -1 : ($b->{Name} eq $defqos) ? 1 : ($a->{Name} cmp $b->{Name})} @assocs2;
-        push @assocs, @assocs2;
+            # we'll sort them here, because we're per account
+            my @assocs2 = values %qos;
+            @assocs2 = sort {($a->{Name} eq $defqos) ? -1 : ($b->{Name} eq $defqos) ? 1 : ($a->{Name} cmp $b->{Name})} @assocs2;
+            push @assocs, @assocs2;
+        }
     }
 
 } else {
     @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
-    if ($account) {
+    if ($in_account) {
         $all = 2 if $all < 2;
         if ($in_user) {
             # account and user, just grep the proper account
-            @assocs = grep {not $_->{UserName} or $_->{Account} eq $account} @assocs;
-            $account = undef;
+            @assocs = grep {not $_->{UserName} or $_->{Account} eq $in_account} @assocs;
+            $in_account = undef;
         } else {
             # with account, needs the non user accounts from the basic user account (any user will do)
             @assocs = grep {not $_->{UserName}} @assocs;
-            push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$account`], type => "list")};
+            push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$in_account`], type => "list")};
         }
     }
 }
@@ -235,7 +239,7 @@ foreach my $assoc (@assocs) {
 my @accounts;
 if ($in_qos) {
     @accounts = @assocs;
-} elsif ($account) {
+} elsif ($in_account) {
     @accounts = grep {$_->{UserName}} @assocs;
 
     # sort by users
@@ -292,7 +296,9 @@ while (my $assoc = shift @accounts) {
 
         # find next row in this account/qos
         if ($in_qos) {
-            if ($all) {
+            if ($in_account) {
+                $assoc = shift @accounts;
+            } elsif ($all) {
                 if (@accounts
                     and $accounts[0]{_UserName} eq $prevuser
                     and $accounts[0]{Account} eq $prevaccount
@@ -309,7 +315,7 @@ while (my $assoc = shift @accounts) {
         } else {
             # if user, get generic account, otherwise get parent account (with or without user)
             if ($assoc->{UserName}) {
-                if ($account and @accounts) {
+                if ($in_account and @accounts) {
                     $assoc = shift @accounts;
                 } else {
                     ($assoc) = grep {$_->{Account} eq $assoc->{Account} and not $_->{UserName}} @assocs;
