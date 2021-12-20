@@ -65,6 +65,7 @@ Resources:
 cpu, mem, gres/gpu          - The used and limits of CPUs, memory and GPUs.
 license/interactive         - Number of allowed interactive sessions
 cpu pj, mem pj, gres/gpu pj - Limits of CPUs, memory and GPUs per job.
+cpu pu, mem pu, gres/gpu pu - Limits of CPUs, memory and GPUs per user.
 GrpSubmitJobs               - Total number of jobs (pending and running)
                               allowed by the account and its children.
 MaxSubmitJobs               - Maximum number of jobs (pending and runnig).
@@ -94,6 +95,7 @@ if ($cluster) {
 
 my %tres;
 my %trespj;
+my %trespu;
 my %tresmin;
 my %nontres = (MaxSubmitJobs => 1,
                MaxJobs => 1,
@@ -143,6 +145,9 @@ if ($in_qos) {
                 $qos{$q}{Account} = $account;
                 # this overrides the data...
                 $qos{$q}{GrpTRESMins} = $qos{$q}{_current}{GrpTRESMins};
+                $qos{$q}{MaxTRESPU} = $qos{$q}{_current}{"User Limits"}{getpwnam($user)} ?
+                  $qos{$q}{_current}{"User Limits"}{getpwnam($user)}{MaxTRESPU} :
+                  $qos{$q}{MaxTRESPU};
             }
 
             # we'll sort them here, because we're per account
@@ -205,6 +210,22 @@ foreach my $assoc (@assocs) {
     @trespj{keys %{$assoc->{_MaxTRESPJ}}} = keys %{$assoc->{_MaxTRESPJ}};
     foreach my $tres (keys %trespj) {
         $assoc->{_MaxTRESPJ}{$tres} = mb2string($assoc->{_MaxTRESPJ}{$tres}) if $assoc->{_MaxTRESPJ}{$tres} and $memtres{$tres};
+    }
+
+    # MaxTRESPU
+    my $maxtrespu = split_gres($assoc->{MaxTRESPU}, type => "string");
+    $assoc->{_MaxTRESPU} = {Limit => {},
+                            Usage => {},
+                           };
+    foreach my $trespu (keys %{$maxtrespu}) {
+        if ($maxtrespu->{$trespu} =~ m/(.*)\((.*)\)/) {
+            $assoc->{_MaxTRESPU}{Usage}{$trespu} = $2;
+            $assoc->{_MaxTRESPU}{Limit}{$trespu} = $1;
+        } else {
+            $assoc->{_MaxTRESPU}{Limit}{$trespu} = $maxtrespu->{$trespu};
+            $assoc->{_MaxTRESPU}{Usage}{$trespu} = 0;
+        }
+        $trespu{$trespu} = $trespu;
     }
 
     # non tres
@@ -286,6 +307,11 @@ while (my $assoc = shift @accounts) {
             $entry{"${tres}pj"} = $assoc->{_MaxTRESPJ}{$tres} // "N";
             $haslimits{"${tres}pj"} ||= $entry{"${tres}pj"} ne "N";
         }
+        foreach my $tres (sort keys %trespu) {
+            $entry{"${tres}pu"} = [$assoc->{_MaxTRESPU}{Usage}{$tres} // "0", $assoc->{_MaxTRESPU}{Limit}{$tres} // "N"];
+            $tlength{"${tres}pu"} = max($tlength{"${tres}pu"} // 0, length($entry{"${tres}pu"}[1]));
+            $haslimits{"${tres}pu"} ||= $entry{"${tres}pu"}[1] ne "N";
+        }
         foreach my $nontres (sort keys %nontres) {
             $entry{$nontres} = [$assoc->{_nontres}{Usage}{$nontres}, $assoc->{_nontres}{Limit}{$nontres}];
             $tlength{$nontres} = max($tlength{$nontres} // 0, length($entry{$nontres}[1]));
@@ -342,6 +368,7 @@ unless ($long) {
     delete @tres{grep {not $haslimits{$_}} keys %haslimits};
     delete @tresmin{map {s/min$//r} grep {not $haslimits{$_}} keys %haslimits};
     delete @trespj{map {s/pj$//r} grep {not $haslimits{$_}} keys %haslimits};
+    delete @trespu{map {s/pu$//r} grep {not $haslimits{$_}} keys %haslimits};
     delete @nontres{grep {not $haslimits{$_}} keys %haslimits};
 }
 
@@ -377,6 +404,9 @@ foreach my $entries (@entries) {
         foreach my $tres (sort keys %trespj) {
             push @data, $row->{"${tres}pj"};
         }
+        foreach my $tres (sort keys %trespu) {
+            push @data, sprintf "\%s / \%".$tlength{"${tres}pu"}."s", @{$row->{"${tres}pu"}};
+        }
         foreach my $tres (sort keys %nontres) {
             if ($useronlytres{$tres} and not $row->{User}) {
                 push @data, "";
@@ -393,6 +423,7 @@ my $table = Text::Table->new("User", \" | ", "Account", \" | ",
                              (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %tres),
                              (map {{title => "$_ min", align => "right", align_title => "right"}, \" | "} sort keys %tresmin),
                              (map {{title => "$_ pj", align => "right", align_title => "right"}, \" | "} sort keys %trespj),
+                             (map {{title => "$_ pu", align => "right", align_title => "right"}, \" | "} sort keys %trespu),
                              (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %nontres),
                             );
 
