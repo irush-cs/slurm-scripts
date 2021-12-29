@@ -160,6 +160,8 @@ if ($in_qos) {
 } else {
     @assocs = @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc user=$user`], type => "list")};
     if ($in_account) {
+        # probably not a good idea...
+        $all = 3 if $all;
         $all = 2 if $all < 2;
         if ($in_user) {
             # account and user, just grep the proper account
@@ -168,7 +170,19 @@ if ($in_qos) {
         } else {
             # with account, needs the non user accounts from the basic user account (any user will do)
             @assocs = grep {not $_->{UserName}} @assocs;
-            push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$in_account`], type => "list")};
+            my $accounts = $in_account;
+            if ($all > 2) {
+                my $all_accounts = cshuji::Slurm::get_accounts();
+                my %done;
+                my @parents = $in_account;
+                while (my $parent = shift @parents) {
+                    next if $done{$parent};
+                    push @parents, map {$_->{Account}} grep {$_->{"Par Name"} eq "$parent" and $_->{Cluster} eq $cluster} @$all_accounts;
+                    $done{$parent} = 1;
+                }
+                $accounts = join(",", keys %done);
+            }
+            push @assocs, @{cshuji::Slurm::parse_scontrol_show([`scontrol show assoc_mgr flags=assoc account=$accounts`], type => "list")};
         }
     }
 }
@@ -263,8 +277,12 @@ if ($in_qos) {
 } elsif ($in_account) {
     @accounts = grep {$_->{UserName}} @assocs;
 
-    # sort by users
-    @accounts = sort {$a->{UserName} cmp $b->{UserName}} @accounts;
+    # sort by accounts or users
+    if ($all > 2) {
+        @accounts = sort {$a->{Account} cmp $b->{Account} or $a->{UserName} cmp $b->{UserName}} @accounts;
+    } else {
+        @accounts = sort {$a->{UserName} cmp $b->{UserName}} @accounts;
+    }
 } else {
     @accounts = grep {$_->{UserName} eq "$user($uid)"} @assocs;
 
