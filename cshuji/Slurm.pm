@@ -651,7 +651,9 @@ sub get_jobs {
                 if ($cr =~ m/(.*)-(.*)/) {
                     # in case the string got truncated by the default 128
                     # limit, not much we can do, just ignore the suffix...
-                    if ((not defined $2) or ($2 < $1)) {
+                    if ((not defined $2)
+                        or ("$2" eq "")
+                        or ($2 < $1)) {
                         $detail->{_nCPUs}++;
                         push @{$detail->{_CPUs}}, $1;
                     } else {
