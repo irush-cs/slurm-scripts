@@ -649,8 +649,15 @@ sub get_jobs {
             $detail->{_CPUs} = [];
             foreach my $cr (split /,/, $detail->{CPU_IDs}) {
                 if ($cr =~ m/(.*)-(.*)/) {
-                    $detail->{_nCPUs} += $2 - $1 + 1;
-                    push @{$detail->{_CPUs}}, ($1 .. $2);
+                    # in case the string got truncated by the default 128
+                    # limit, not much we can do, just ignore the suffix...
+                    if ((not defined $2) or ($2 < $1)) {
+                        $detail->{_nCPUs}++;
+                        push @{$detail->{_CPUs}}, $1;
+                    } else {
+                        $detail->{_nCPUs} += $2 - $1 + 1;
+                        push @{$detail->{_CPUs}}, ($1 .. $2);
+                    }
                 } else {
                     $detail->{_nCPUs}++;
                     push @{$detail->{_CPUs}}, $cr;

@@ -186,6 +186,36 @@ JobId=20547 JobName=test
    StdOut=/std/out3
    Power=
 
+JobId=1306093 JobName=test_06112019.sh
+   UserId=user6(600) GroupId=group6(606) MCS_label=N/A
+   Priority=1007092 Nice=0 Account=account6 QOS=normal WCKey=*
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=0 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   DerivedExitCode=0:0
+   RunTime=19:59:42 TimeLimit=6-00:00:00 TimeMin=N/A
+   SubmitTime=2022-02-08T16:02:27 EligibleTime=2022-02-08T16:02:27
+   AccrueTime=2022-02-08T16:02:27
+   StartTime=2022-02-08T16:02:28 EndTime=2022-02-14T16:02:28 Deadline=N/A
+   PreemptEligibleTime=2022-02-08T16:02:28 PreemptTime=None
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2022-02-08T16:02:28
+   Partition=medium AllocNode:Sid=glacier-25:53704
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=node-12
+   BatchHost=node-12
+   NumNodes=1 NumCPUs=64 NumTasks=64 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=64,mem=70000M,node=1,billing=85
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+     Nodes=node-12 CPU_IDs=2-3,6-7,10,12-13,16,18-19,28,31,33-36,40-42,44,47,54-63,66,68-69,72-73,76-78,81,84,86-88,90-91,99-100,103,105,107-109,112,115- Mem=70000 GRES=
+   MinCPUsNode=1 MinMemoryNode=70000M MinTmpDiskNode=0
+   Features=cpuonly DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/a/command
+   WorkDir=/a/workdir
+   StdErr=/a/stderr
+   StdIn=/dev/null
+   StdOut=/a/stdout
+   Power=
+
 ";
 
 my %jobs = (1 => {"JobId" => "1",
@@ -237,8 +267,10 @@ my %jobs = (1 => {"JobId" => "1",
                   "NtasksPerN:B:S:C" => "0:0:*:*",
                   "CoreSpec" => "*",
                   "_DETAILS" => [{"Nodes" => "node-63", "CPU_IDs" => "22-23", "Mem" => "1000", "GRES_IDX" => "",   "_GRES_IDX" => "", "_GRES" => {}, "_GRESs" => {}, "_JobId" => 1, "_nCPUs" => 2, "_CPUs" => [22, 23],  "_EndTime" => "2019-02-01T10:35:54", "_NodeList" => ['node-63']},
-                                 {"Nodes" => "node-64", "CPU_IDs" => "0,4-7",   "Mem" => "2000", "GRES_IDX" => "", "_GRES_IDX" => "", "_GRES" => {}, "_GRESs" => {}, "_JobId" => 1, "_nCPUs" => 5, "_CPUs" => [0,4,5,6,7], "_EndTime" => "2019-02-01T10:35:54", "_NodeList" => ['node-64']},
-                                 {"Nodes" => "node-65", "CPU_IDs" => "20-21", "Mem" => "1000", "GRES_IDX" => "",   "_GRES_IDX" => "", "_GRES" => {}, "_GRESs" => {}, "_JobId" => 1, "_nCPUs" => 2, "_CPUs" => [20, 21],  "_EndTime" => "2019-02-01T10:35:54", "_NodeList" => ['node-65']},
+                                 {
+                                  "Nodes" => "node-64", "CPU_IDs" => "0,4-7",   "Mem" => "2000", "GRES_IDX" => "", "_GRES_IDX" => "", "_GRES" => {}, "_GRESs" => {}, "_JobId" => 1, "_nCPUs" => 5, "_CPUs" => [0,4,5,6,7], "_EndTime" => "2019-02-01T10:35:54", "_NodeList" => ['node-64']},
+                                 {
+                                  "Nodes" => "node-65", "CPU_IDs" => "20-21", "Mem" => "1000", "GRES_IDX" => "",   "_GRES_IDX" => "", "_GRES" => {}, "_GRESs" => {}, "_JobId" => 1, "_nCPUs" => 2, "_CPUs" => [20, 21],  "_EndTime" => "2019-02-01T10:35:54", "_NodeList" => ['node-65']},
                                 ],
                   "MinCPUsNode" => "1",
                   "MinMemoryCPU" => "500M",
@@ -616,8 +648,95 @@ my %jobs = (1 => {"JobId" => "1",
                         "StdOut" => "/std/out3",
                         "Power" => "",
                         "_DETAILS" => [],
-                       }
+                       },
+
+            "1306093" => {
+                          "JobId" => "1306093",
+                          "JobName" => "test_06112019.sh",
+                          "UserId" => "user6(600)",
+                          "_UID" => "600",
+                          "_UserName" => "user6",
+                          "GroupId" => "group6(606)",
+                          "MCS_label" => "N/A",
+                          "Priority" => "1007092",
+                          "Nice" => "0",
+                          "Account" => "account6",
+                          "QOS" => "normal",
+                          "WCKey" => "*",
+                          "JobState" => "RUNNING",
+                          "Reason" => "None",
+                          "Dependency" => "(null)",
+                          "Requeue" => "0",
+                          "Restarts" => "0",
+                          "BatchFlag" => "1",
+                          "Reboot" => "0",
+                          "ExitCode" => "0:0",
+                          "DerivedExitCode" => "0:0",
+                          "RunTime" => "19:59:42",
+                          "TimeLimit" => "6-00:00:00",
+                          "TimeMin" => "N/A",
+                          "SubmitTime" => "2022-02-08T16:02:27",
+                          "EligibleTime" => "2022-02-08T16:02:27",
+                          "AccrueTime" => "2022-02-08T16:02:27",
+                          "StartTime" => "2022-02-08T16:02:28",
+                          "EndTime" => "2022-02-14T16:02:28",
+                          "Deadline" => "N/A",
+                          "PreemptEligibleTime" => "2022-02-08T16:02:28",
+                          "PreemptTime" => "None",
+                          "SuspendTime" => "None",
+                          "SecsPreSuspend" => "0",
+                          "LastSchedEval" => "2022-02-08T16:02:28",
+                          "Partition" => "medium",
+                          "AllocNode:Sid" => "glacier-25:53704",
+                          "ReqNodeList" => "(null)",
+                          "ExcNodeList" => "(null)",
+                          "NodeList" => "node-12",
+                          "_NodeList" => ["node-12"],
+                          "BatchHost" => "node-12",
+                          "NumNodes" => "1",
+                          "NumCPUs" => "64",
+                          "NumTasks" => "64",
+                          "CPUs/Task" => "1",
+                          "ReqB:S:C:T" => "0:0:*:*",
+                          "TRES" => "cpu=64,mem=70000M,node=1,billing=85",
+                          "_TRES" => {cpu => 64, mem => "70000M", node => 1, billing => 85},
+                          "Socks/Node" => "*",
+                          "NtasksPerN:B:S:C" => "0:0:*:*",
+                          "CoreSpec" => "*",
+                          "MinCPUsNode" => "1",
+                          "MinMemoryNode" => "70000M",
+                          "MinTmpDiskNode" => "0",
+                          "Features" => "cpuonly",
+                          "DelayBoot" => "00:00:00",
+                          "OverSubscribe" => "OK",
+                          "Contiguous" => "0",
+                          "Licenses" => "(null)",
+                          "Network" => "(null)",
+                          "Command" => "/a/command",
+                          "WorkDir" => "/a/workdir",
+                          "StdErr" => "/a/stderr",
+                          "StdIn" => "/dev/null",
+                          "StdOut" => "/a/stdout",
+                          "Power" => "",
+                          "_DETAILS" => [
+                                         {"_JobId" => "1306093",
+                                          "Nodes" => "node-12",
+                                          "_NodeList" => ["node-12"],
+                                          "CPU_IDs" => "2-3,6-7,10,12-13,16,18-19,28,31,33-36,40-42,44,47,54-63,66,68-69,72-73,76-78,81,84,86-88,90-91,99-100,103,105,107-109,112,115-",
+                                          "Mem" => "70000",
+                                          "GRES" => "",
+                                          "_GRESs" => {},
+                                          "_GRES" => {},
+                                          "_CPUs" => [2,3,6,7,10,12,13,16,18,19,28,31,33,34,35,36,40,41,42,44,47,54,55,56,57,58,59,60,61,62,63,66,68,69,72,73,76,77,78,81,84,86,87,88,90,91,99,100,103,105,107,108,109,112,115],
+                                          "_GRES_IDX" => "",
+                                          "_EndTime" => "2022-02-14T16:02:28",
+                                          "_nCPUs" => "55",
+                                         },
+                                        ],
+
+                         },
            );
+
 
 my $results = get_jobs(_scontrol_output => [split /\n/, $jobs]);
 is_deeply($results, \%jobs);
