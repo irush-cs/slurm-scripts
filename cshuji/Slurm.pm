@@ -4,7 +4,7 @@ package cshuji::Slurm;
 #
 #   cshuji/Slurm.pm
 #
-#   Copyright (C) 2018-2021 Hebrew University of Jerusalem Israel, see LICENSE
+#   Copyright (C) 2018-2022 Hebrew University of Jerusalem Israel, see LICENSE
 #   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
@@ -402,23 +402,26 @@ sub split_gres {
 
 =head2 gres2string
 
- $results = gres2string($gres)
+ $results = gres2string($gres, [$eq])
 
-Converts a gres hash (as returned from split_gres) back to string.
+Converts a gres hash (as returned from split_gres) back to string. $eq is the
+equal sign between the gres and the value. By default it's ":", but sometimes
+"=" is preferred.
 
 Examples:
 
-  gres2string({gpu => 2, mem => "3M"})    -> "gpu:2,mem:3M"
-  gres2string({gpu => 3})                 -> "gpu,gpu:2"
-  gres2string({gpu => 5, mem => "2050M"}) -> "gpu:2,mem:2M", "gpu:3,mem:2G"
-  gres2string({"gres/gpu" => 3})          -> "gres/gpu:3"
+  gres2string({gpu => 2, mem => "3M"})         -> "gpu:2,mem:3M"
+  gres2string({gpu => 3})                      -> "gpu,gpu:2"
+  gres2string({gpu => 5, mem => "2050M"})      -> "gpu:2,mem:2M", "gpu:3,mem:2G"
+  gres2string({gpu => 5, mem => "2050M"}, '=') -> "gpu=2,mem=2M", "gpu=3,mem=2G"
+  gres2string({"gres/gpu" => 3})               -> "gres/gpu:3"
 
 =cut
 
 sub gres2string {
     my $input = shift;
+    my $sep = shift // ":";
     my @outputs;
-    my $sep = ":";
 
     foreach my $key (sort keys %$input) {
         push @outputs, $key.$sep.$input->{$key};
