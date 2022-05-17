@@ -317,7 +317,9 @@ sub parse_list {
 
 Splits a gres string ($gres) to a hash ($results) for gres keys to values.
 
-no_consume, types, and socket bindings are currently ignored.
+no_consume, and socket bindings are currently ignored.
+
+Gres type is ignored by default unless grestype option is set.
 
 If $prev is specified, the results will contained both gres's
 combined. Numerical values will be summed; Memory suffixes will be handled
@@ -334,6 +336,10 @@ Available options:
 
 =item type - if "string" treats every value as string. Good for non countable entries.
 
+=item grestype - if "only" will include gres type but not generic type
+                 (i.e. "gpu:a10" without "gpu"). If true will include both type
+                 and generic type, if false will not include gres type.
+
 =back
 
 =back
@@ -344,6 +350,9 @@ Examples:
   split_gres("gpu,gpu:2")                    -> {gpu => 3}
   split_gres("gpu:2,mem:2M", "gpu:3,mem:2G") -> {gpu => 5, mem => "2050M"}
   split_gres("gres/gpu=3")                   -> {"gres/gpu" => 3}
+  split_gres("gpu:a10:3")                    -> {"gpu" => 3}
+  split_gres("gpu:a10:3", grestype => 1)     -> {"gpu" => 3, "gpu:a10" => 3}
+  split_gres("gpu:a10:3", grestype => "only") -> {"gpu:a10" => 3}
 
 =cut
 
@@ -357,6 +366,7 @@ sub split_gres {
     my %args = @_;
     my $sep = ":";
     my $type = $args{type} // "type";
+    my $grestype = $args{grestype} // 0;
 
     # for now, ignore socket binding
     $input =~ s/\(S:[-\d]+?\)//g;
@@ -376,12 +386,39 @@ sub split_gres {
 
         $g = "$g${sep}1" if index($g, $sep) < 0 or ($type ne "string" and $g !~ m/${sep}\d/);
         my ($t, $v, $r) = split /\Q${sep}\E/, $g;
-        $v = $r if ($v !~ m/^\d/ and $r and $r =~ m/^\d/);
-        if ($v =~ m/^\d+$/) {
-            $gres->{$t} ||= 0;
+        my $gtype;
+        if ($v !~ m/^\d/ and $r and $r =~ m/^\d/) {
+            $gtype = "$t$sep$v";
+            $v = $r;
         }
-        if (defined $gres->{$t} and $gres->{$t} =~ m/^\d+$/ and $v =~ m/^\d+$/) {
-            $gres->{$t} += $v;
+        if ($v =~ m/^\d+$/) {
+            if ($gtype) {
+                if ($grestype) {
+                    $gres->{$gtype} ||= 0;
+                    if ($grestype ne "only") {
+                        $gres->{$t} ||= 0;
+                    }
+                } else {
+                    $gres->{$t} ||= 0;
+                }
+            } else {
+                $gres->{$t} ||= 0;
+            }
+        }
+        my $tocheck = ($grestype and $grestype eq "only" and $gtype) ? $gtype : $t;
+        if (defined $gres->{$tocheck} and $gres->{$tocheck} =~ m/^\d+$/ and $v =~ m/^\d+$/) {
+            if ($gtype) {
+                if ($grestype) {
+                    $gres->{$gtype} += $v;
+                    if ($grestype ne "only") {
+                        $gres->{$t} += $v;
+                    }
+                } else {
+                    $gres->{$t} += $v;
+                }
+            } else {
+                $gres->{$t} += $v;
+            }
         } else {
             $gres->{$t} = join(",", $v, $gres->{$t} ? $gres->{$t} : ());
 
