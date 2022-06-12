@@ -42,6 +42,14 @@ not. This is useful when pam\_systemd.so is not used, but the user processes
 still shouldn't be in the system-slurmd.slice cgroup. This only affects non
 root cgroups, if the task is in the root (`/`), it won't be moved.
 
+`as_type=<type>` parameter can be used to `restore` (or `slurm`) from a
+different PAM type. E.g. with `pam_slurm_adopt.so` that runs in `account`,
+`pam_slurm_save_cgroups.sh` can be used in the `session` PAM entry with
+`as_type=account` to re-read the cgroups that were set in the `account` stage.
+
+`delete_only_on_close` can be used on the `session` stage such that the file
+won't be deleted in the open_session stage, just in the close_session.
+
 ## healthcheck\.sh
 
 A script to run as the `HealthCheckProgram` (as set in `slurm.conf`) used to
