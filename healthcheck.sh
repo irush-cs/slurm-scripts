@@ -4,7 +4,7 @@
 #
 #   healthcheck.sh
 #
-#   Copyright (C) 2018-2020 Hebrew University of Jerusalem Israel, see LICENSE
+#   Copyright (C) 2018-2022 Hebrew University of Jerusalem Israel, see LICENSE
 #   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
@@ -16,6 +16,11 @@ set -u
 
 PATH=${PATH}:/etc/alternatives/slurm/bin
 export PATH
+
+long=
+if echo "$@" | grep -q -- --long; then
+    long=1
+fi
 
 slurmdir=`dirname \`scontrol show config | awk '$1=="SLURM_CONF" {print $3}'\``
 hcdir="${slurmdir}/healthcheck.d"
@@ -39,10 +44,16 @@ if [[ -z "$maintainers" ]]; then
 fi
 
 time1=`date +%s`
-out=`timeout -k 1 50s run-parts --exit-on-error --regex '[^~]$' ${hcdir} 2>/dev/null || true`
+if [[ -n "$long" ]]; then
+    timeout=300
+    out=`timeout -k 1 ${timeout}s run-parts --exit-on-error --regex '[^~]$' --arg --long ${hcdir} 2>/dev/null || true`
+else
+    timeout=50
+    out=`timeout -k 1 ${timeout}s run-parts --exit-on-error --regex '[^~]$' ${hcdir} 2>/dev/null || true`
+fi
 time2=`date +%s`
-if [[ -z "$out" && $((time2 - time1)) -ge 50 ]]; then
-    out="healthcheck timeout"
+if [[ -z "$out" && $((time2 - time1)) -ge $timeout ]]; then
+    out="healthcheck timeout ($timeout)"
 fi
 if [[ -z "$out" && ! -d ${hcdir} ]]; then
     out="healthcheck.d is missing"
