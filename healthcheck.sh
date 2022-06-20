@@ -21,6 +21,10 @@ long=
 if echo "$@" | grep -q -- --long; then
     long=1
 fi
+verbose=
+if echo "$@" | grep -q -- -v; then
+    verbose=-v
+fi
 
 slurmdir=`dirname \`scontrol show config | awk '$1=="SLURM_CONF" {print $3}'\``
 hcdir="${slurmdir}/healthcheck.d"
@@ -44,13 +48,21 @@ if [[ -z "$maintainers" ]]; then
 fi
 
 time1=`date +%s`
+if [[ -z "$verbose" ]]; then
+    exec 3>&2
+    exec 2>/dev/null
+fi
 if [[ -n "$long" ]]; then
     timeout=300
-    out=`timeout -k 1 ${timeout}s run-parts --exit-on-error --regex '[^~]$' --arg --long ${hcdir} 2>/dev/null || true`
+    out=`timeout -k 1 ${timeout}s run-parts $verbose --exit-on-error --regex '[^~]$' --arg --long ${hcdir} || true`
 else
     timeout=50
-    out=`timeout -k 1 ${timeout}s run-parts --exit-on-error --regex '[^~]$' ${hcdir} 2>/dev/null || true`
+    out=`timeout -k 1 ${timeout}s run-parts $verbose --exit-on-error --regex '[^~]$' ${hcdir} || true`
 fi
+if [[ -z "$verbose" ]]; then
+    exec 2>&3
+fi
+
 time2=`date +%s`
 if [[ -z "$out" && $((time2 - time1)) -ge $timeout ]]; then
     out="healthcheck timeout ($timeout)"
