@@ -28,6 +28,7 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     get_clusters
                     set_cluster
                     get_nodes
+                    get_partitions
                     get_reservations
                     get_accounts
                     get_users
@@ -1161,6 +1162,48 @@ sub get_nodes {
     }
 
     return $nodes;
+}
+
+
+=head2 get_partitions
+
+ $results = get_partitions()
+
+Get partitions hash ref by calling "scontrol show partitions". Uses the
+I<parse_scontrol_show>.
+
+In addition to the normal values, the following calculated values are also
+available:
+
+=over
+
+=over
+
+=item _NodeList      - Array of nodes from Nodes
+
+=back
+
+=back
+
+=cut
+
+sub get_partitions {
+
+    my %args = @_;
+    my $partitions;
+
+    local $SIG{CHLD} = 'DEFAULT';
+    if ($args{_scontrol_output}) {
+        $partitions = parse_scontrol_show($args{_scontrol_output});
+    } else {
+        $partitions = parse_scontrol_show([`scontrol show partitions`]);
+    }
+
+    foreach my $partition (values %$partitions) {
+        $partition->{_NodeList} = [nodes2array($partition->{Nodes})];
+    }
+
+    return $partitions;
 }
 
 
