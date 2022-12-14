@@ -496,6 +496,8 @@ sub _nodecmp {
     }
 
     if ($a2 ne $b2) {
+        return -1 if not $a2;
+        return 1 if not $b2;
         return $a2 <=> $b2;
     }
 
