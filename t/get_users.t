@@ -6,26 +6,26 @@ use Test::More;
 
 use cshuji::Slurm qw(get_users);
 
-my $users = "User|Cluster|Def Acct|Account|Def QOS|
-user1|cluster1|account1|account1|normal|
-user2|cluster1|account1|account1|normal|
-user3|cluster1|account1|account1|normal|
-user3|cluster2|account2|killable-bio|killable|
-user3|cluster2|account2|default|killable|
-user3|cluster2|account2|account2|normal|
-user3|cluster3|account2|account2|normal|
-user5|cluster2|account3|killable-bio|killable|
-user5|cluster2|account3|default|killable|
-user5|cluster2|account3|account3|normal|
-user5|cluster3|account3|account3|normal|
-user6|cluster1|account1|account1|normal|
-user7|cluster1|account1|account1|normal|
-user7|cluster1|account1|account1|normal|
-user7|cluster4|account4|killable-cs|killable|
-user7|cluster4|account4|account4|normal|
-user7|cluster4|account4|default|killable|
-user8|cluster5|account5|account5|normal|
-user8|cluster5|account5|killable-astro|killable|
+my $users = "User|Cluster|Def Acct|Account|Def QOS|Admin|
+user1|cluster1|account1|account1|normal|Administrator|
+user2|cluster1|account1|account1|normal|None|
+user3|cluster1|account1|account1|normal|None|
+user3|cluster2|account2|killable-bio|killable|None|
+user3|cluster2|account2|default|killable|None|
+user3|cluster2|account2|account2|normal|None|
+user3|cluster3|account2|account2|normal|None|
+user5|cluster2|account3|killable-bio|killable|None|
+user5|cluster2|account3|default|killable|None|
+user5|cluster2|account3|account3|normal|None|
+user5|cluster3|account3|account3|normal|None|
+user6|cluster1|account1|account1|normal|Administrator|
+user7|cluster1|account1|account1|normal|None|
+user7|cluster1|account1|account1|normal|None|
+user7|cluster4|account4|killable-cs|killable|None|
+user7|cluster4|account4|account4|normal|None|
+user7|cluster4|account4|default|killable|None|
+user8|cluster5|account5|account5|normal|None|
+user8|cluster5|account5|killable-astro|killable|None|
 ";
 
 my @users = (
@@ -35,6 +35,7 @@ my @users = (
               "Def Acct" => "account1",
               "Account" => "account1",
               "Def QOS" => "normal",
+              "Admin" => "Administrator",
              },
              {
               "User" => "user2",
@@ -42,6 +43,7 @@ my @users = (
               "Def Acct" => "account1",
               "Account" => "account1",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user3",
@@ -49,6 +51,7 @@ my @users = (
               "Def Acct" => "account1",
               "Account" => "account1",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user3",
@@ -56,6 +59,7 @@ my @users = (
               "Def Acct" => "account2",
               "Account" => "killable-bio",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
              {
               "User" => "user3",
@@ -63,6 +67,7 @@ my @users = (
               "Def Acct" => "account2",
               "Account" => "default",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
              {
               "User" => "user3",
@@ -70,6 +75,7 @@ my @users = (
               "Def Acct" => "account2",
               "Account" => "account2",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user3",
@@ -77,6 +83,7 @@ my @users = (
               "Def Acct" => "account2",
               "Account" => "account2",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user5",
@@ -84,6 +91,7 @@ my @users = (
               "Def Acct" => "account3",
               "Account" => "killable-bio",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
              {
               "User" => "user5",
@@ -91,6 +99,7 @@ my @users = (
               "Def Acct" => "account3",
               "Account" => "default",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
              {
               "User" => "user5",
@@ -98,6 +107,7 @@ my @users = (
               "Def Acct" => "account3",
               "Account" => "account3",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user5",
@@ -105,6 +115,7 @@ my @users = (
               "Def Acct" => "account3",
               "Account" => "account3",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user6",
@@ -112,6 +123,7 @@ my @users = (
               "Def Acct" => "account1",
               "Account" => "account1",
               "Def QOS" => "normal",
+              "Admin" => "Administrator",
              },
              {
               "User" => "user7",
@@ -119,6 +131,7 @@ my @users = (
               "Def Acct" => "account1",
               "Account" => "account1",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user7",
@@ -126,6 +139,7 @@ my @users = (
               "Def Acct" => "account1",
               "Account" => "account1",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user7",
@@ -133,6 +147,7 @@ my @users = (
               "Def Acct" => "account4",
               "Account" => "killable-cs",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
              {
               "User" => "user7",
@@ -140,6 +155,7 @@ my @users = (
               "Def Acct" => "account4",
               "Account" => "account4",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user7",
@@ -147,6 +163,7 @@ my @users = (
               "Def Acct" => "account4",
               "Account" => "default",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
              {
               "User" => "user8",
@@ -154,6 +171,7 @@ my @users = (
               "Def Acct" => "account5",
               "Account" => "account5",
               "Def QOS" => "normal",
+              "Admin" => "None",
              },
              {
               "User" => "user8",
@@ -161,6 +179,7 @@ my @users = (
               "Def Acct" => "account5",
               "Account" => "killable-astro",
               "Def QOS" => "killable",
+              "Admin" => "None",
              },
             );
 

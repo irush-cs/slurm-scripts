@@ -896,6 +896,8 @@ The returned fields are:
 
 =item Def QOS
 
+=item Admin
+
 =back
 
 =back
@@ -911,7 +913,7 @@ sub get_users {
     if ($args{_sacctmgr_output}) {
         $users = parse_list($args{_sacctmgr_output});
     } else {
-        $users = parse_list([`sacctmgr list users -s -p "format=user,cluster,defaultaccount,account,defaultqos"`]);
+        $users = parse_list([`sacctmgr list users -s -p "format=user,cluster,defaultaccount,account,defaultqos,admin"`]);
     }
 
     return $users;
