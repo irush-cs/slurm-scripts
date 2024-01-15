@@ -17,8 +17,8 @@ case "${state}" in
             draintime=`date -d \`echo $draintime\` +%s`
             boottime=`awk '$1=="btime"{print $2}' /proc/stat`
 
-            # if idle, check if before or after reboot
-            if [[ "$state" = "IDLE+DRAIN" || "$state" = "RESERVED+DRAIN" || "$state" = "MAINT+DRAIN" ]]; then
+            # if idle or down, check if before or after reboot
+            if [[ "$state" = "IDLE+DRAIN" || "$state" = "RESERVED+DRAIN" || "$state" = "MAINT+DRAIN" || "$state" = "DOWN*+DRAIN" ]]; then
                 if [[ $draintime -lt $boottime ]]; then
                     # drain before reboot, can resume
                     exit 0
