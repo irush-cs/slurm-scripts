@@ -39,15 +39,17 @@ our @EXPORT_OK = qw(parse_scontrol_show
                     string2mb
                     mb2string
                   );
-our @EXPORT = qw();
+#our @EXPORT = qw();
 
 our $VERSION = "0.1";
 our $escaped_delimiter = 0;
 
 BEGIN {
     # for backward compatibility
+    our @EXPORT = qw();
     if (eval "use cshuji::Slurm::Local; 1") {
         cshuji::Slurm::Local->export_to_level(1, "cshuji::Slurm::Local", @cshuji::Slurm::Local::EXPORT);
+        push @EXPORT, @cshuji::Slurm::Local::EXPORT;
     }
 }
 
