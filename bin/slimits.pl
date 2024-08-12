@@ -88,7 +88,10 @@ my %memtres = (mem => 1,
               );
 
 if ($cluster) {
-    cshuji::Slurm::set_cluster($cluster);
+    unless (cshuji::Slurm::set_cluster($cluster)) {
+        print STDERR "Can't access cluster $cluster\n";
+        exit 2;
+    }
 } else {
     $cluster = cshuji::Slurm::get_config()->{ClusterName};
 }
