@@ -100,14 +100,16 @@ if [[ $? != 0 || -n "$out" ]]; then
             ;;
     esac
 
-    if [[ "$newdrain" == 1 ]] && [[ ! -e ${slurmdir}/healthcheck-mail.ignore ]] || ! grep -qx "$out" ${slurmdir}/healthcheck-mail.ignore ; then
-        (echo "Healthcheck issues ($out), draining $node";
-         echo;
-         echo "Running processes:";
-         squeue -o "%.18i %.11P %.8j %.8u %.8a %.8T %.10V %.12M %.12l %.6D %.4C %.10m %.7b %13W %R" "$@" -w $node;
-         echo;
-         echo "To recheck run:";
-         echo "root@$node# $0") | mail -s "Draining node $node (HC: $out)" ${maintainers} > /dev/null 2>&1
+    if [[ "$newdrain" == 1 ]]; then
+        if [[ ! -e ${slurmdir}/healthcheck-mail.ignore ]] || ! grep -qx "$out" ${slurmdir}/healthcheck-mail.ignore ; then
+            (echo "Healthcheck issues ($out), draining $node";
+             echo;
+             echo "Running processes:";
+             squeue -o "%.18i %.11P %.8j %.8u %.8a %.8T %.10V %.12M %.12l %.6D %.4C %.10m %.7b %13W %R" "$@" -w $node;
+             echo;
+             echo "To recheck run:";
+             echo "root@$node# $0") | mail -s "Draining node $node (HC: $out)" ${maintainers} > /dev/null 2>&1
+        fi
     fi
 
     # on startup, will run this until passes
