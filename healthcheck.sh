@@ -100,7 +100,7 @@ if [[ $? != 0 || -n "$out" ]]; then
             ;;
     esac
 
-    if [[ "$newdrain" == 1 ]]; then
+    if [[ "$newdrain" == 1 ]] && [[ ! -e ${slurmdir}/healthcheck-mail.ignore ]] || ! grep -qx "$out" ${slurmdir}/healthcheck-mail.ignore ; then
         (echo "Healthcheck issues ($out), draining $node";
          echo;
          echo "Running processes:";
@@ -117,7 +117,10 @@ else
         *DRAIN*)
             reason=`scontrol show node $node | awk -F= '$1~/^\s*Reason/{print $2}'`
             if echo $reason | grep -q ^HC:\ ; then
-                scontrol show node $node | mail -s "Resuming node $node" ${maintainers} > /dev/null 2>&1
+                reason=`echo $reason | sed -e 's/HC: \(.*\) \[.*/\1/'`
+                if [[ ! -e ${slurmdir}/healthcheck-mail.ignore ]] || ! grep -qx "$reason" ${slurmdir}/healthcheck-mail.ignore; then
+                    scontrol show node $node | mail -s "Resuming node $node" ${maintainers} > /dev/null 2>&1
+                fi
                 scontrol update nodename=$node state=resume
             fi
             ;;
