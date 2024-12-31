@@ -1140,7 +1140,9 @@ available:
 
 =over
 
-=item _Gres       - Hash of Gres
+=item _Gres       - Hash of Gres, only names (no types)
+
+=item _GresType   - Hash of Gres, with typed gres (via "only" in split_gres)
 
 =back
 
@@ -1165,6 +1167,7 @@ sub get_nodes {
             $node->{Gres} = "";
         }
         $node->{_Gres} = split_gres($node->{Gres}, {});
+        $node->{_GresType} = split_gres($node->{Gres}, grestype => "only");
     }
 
     return $nodes;
