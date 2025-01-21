@@ -77,6 +77,10 @@ MaxJobs                     - Maximum number of running jobs.
 
 $user = $in_user if $in_user;
 my $uid = getpwnam($user);
+unless (defined $uid) {
+    print STDERR "Can't find uid for user \"$user\"\n";
+    exit 2;
+}
 $avail = 0 if $in_account;
 my %trestorun = (cpu => 1,
                  MaxSubmitJobs => 1,
