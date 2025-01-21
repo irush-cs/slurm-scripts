@@ -279,10 +279,32 @@ if ($in_qos) {
     @accounts = @assocs;
 } elsif ($in_account) {
     @accounts = grep {$_->{UserName}} @assocs;
+    unless (@accounts) {
+        @accounts = (grep {$_->{Account} eq $in_account} @assocs)[0];
+    }
+    unless (@accounts) {
+        print STDERR "No such account \"$in_account\"\n";
+        exit 3;
+    }
 
-    # sort by accounts or users
+    # calculate level
+    my %levels = (root => 1);
+    my @remaining = @assocs;
+    while (@remaining) {
+        foreach my $assoc (@remaining) {
+            if ($levels{$assoc->{Account}}) {
+                $assoc->{_Level} = $levels{$assoc->{Account}};
+            } elsif ($assoc->{_ParentAccount} and $levels{$assoc->{_ParentAccount}}) {
+                $levels{$assoc->{Account}} = $levels{$assoc->{_ParentAccount}} + 1;
+                $assoc->{_Level} = $levels{$assoc->{Account}};
+            }
+        }
+        @remaining = grep {not exists $_->{_Level}} @remaining;
+    }
+
+    # sort by level or accounts or users
     if ($all > 2) {
-        @accounts = sort {$a->{Account} cmp $b->{Account} or $a->{UserName} cmp $b->{UserName}} @accounts;
+        @accounts = sort {$levels{$b->{Account}} <=> $levels{$a->{Account}} or $a->{Account} cmp $b->{Account} or $a->{UserName} cmp $b->{UserName}} @accounts;
     } else {
         @accounts = sort {$a->{UserName} cmp $b->{UserName}} @accounts;
     }
@@ -299,6 +321,7 @@ if ($in_qos) {
 my %haslimits;
 my @entries;
 my %tlength;
+
 ACCOUNT:
 while (my $assoc = shift @accounts) {
     my @rows;
@@ -360,20 +383,17 @@ while (my $assoc = shift @accounts) {
                 $assoc = undef;
             }
         } else {
-            # if user, get generic account, otherwise get parent account (with or without user)
+            # if user, get generic account (or next user in account), otherwise get parent account (with or without user)
             if ($assoc->{UserName}) {
-                if ($in_account and @accounts) {
+                if ($in_account and @accounts
+                    and $accounts[0]->{Account} eq $assoc->{Account}
+                   ) {
                     $assoc = shift @accounts;
                 } else {
                     ($assoc) = grep {$_->{Account} eq $assoc->{Account} and not $_->{UserName}} @assocs;
                 }
             } elsif ($assoc->{_ParentAccount}) {
-                my ($assoc1) = grep {$_->{Account} eq $assoc->{_ParentAccount} and $_->{UserName}} @assocs;
-                if ($assoc1) {
-                    $assoc = $assoc1;
-                } else {
-                    ($assoc) = grep {$_->{Account} eq $assoc->{_ParentAccount} and not $_->{UserName}} @assocs;
-                }
+                ($assoc) = grep {$_->{Account} eq $assoc->{_ParentAccount} and not $_->{UserName}} @assocs;
             } else {
                 $assoc = undef;
             }
