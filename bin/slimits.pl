@@ -110,6 +110,10 @@ my %nontres = (MaxSubmitJobs => 1,
                MaxJobs => 1,
                GrpSubmitJobs => 1,
               );
+if ($in_qos) {
+    $nontres{MaxJobsPA} = 1;
+    $nontres{MaxJobsPU} = 1;
+}
 my %useronlytres = (MaxSubmitJobs => 1,
                     MaxJobs => 1,
                    );
@@ -160,6 +164,12 @@ if ($in_qos) {
                 $qos{$q}{MaxTRESPA} = $qos{$q}{_current}{"Account Limits"}{$account} ?
                   $qos{$q}{_current}{"Account Limits"}{$account}{MaxTRESPA} :
                   $qos{$q}{MaxTRESPA};
+                $qos{$q}{MaxJobsPA} = $qos{$q}{_current}{"Account Limits"}{$account} ?
+                  $qos{$q}{_current}{"Account Limits"}{$account}{MaxJobsPA} :
+                  $qos{$q}{MaxJobsPA};
+                $qos{$q}{MaxJobsPU} = $qos{$q}{_current}{"Account Limits"}{$account} ?
+                  $qos{$q}{_current}{"Account Limits"}{$account}{MaxJobsPU} :
+                  $qos{$q}{MaxJobsPU};
             }
 
             # we'll sort them here, because we're per account
