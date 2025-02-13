@@ -166,7 +166,7 @@ if ($in_qos) {
                   $qos{$q}{MaxTRESPA};
                 $qos{$q}{MaxJobsPA} = $qos{$q}{_current}{"Account Limits"}{$account} ?
                   $qos{$q}{_current}{"Account Limits"}{$account}{MaxJobsPA} :
-                  $qos{$q}{MaxJobsPA};
+                  ($qos{$q}{MaxJobsPA} ? "$qos{$q}{MaxJobsPA}(0)" : '');
                 $qos{$q}{MaxJobsPU} = $qos{$q}{_current}{"Account Limits"}{$account} ?
                   $qos{$q}{_current}{"Account Limits"}{$account}{MaxJobsPU} :
                   $qos{$q}{MaxJobsPU};
