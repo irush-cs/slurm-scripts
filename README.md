@@ -84,6 +84,12 @@ A healthcheck script that reboots a node if the node is IDLE+DRAIN and drained
 because of 'HC: needs reboot'. The node is kept drained until it's idle, then
 rebooted, then resumed (by the `healthcheck.sh` script).
 
+If a file exists in `$slurmdir/reboot-reasons`, each line can be a regex of
+reboot reasons to also cause a reboot. This is mainly for `HC:` reasons as to
+reboot nodes on known errors (without HC, they'll be rebooted, but probably not
+resumed).
+
+
 ## cluster\.conf
 
 An ini type configuration file, used by some of the scripts. The file should be
