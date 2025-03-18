@@ -34,6 +34,9 @@ state="`slurm_node $node State`"
 case "${state}" in
     *DRAIN*)
         reason="`slurm_node $node Reason`"
+        if ! echo "$reason" | grep -q '@'; then
+            exit 0;
+        fi
         draintime=`echo $reason | sed -e 's/.*\[[^@]\+@//' -e 's/\]$//'`
         draintime=`date -d \`echo $draintime\` +%s`
         if reboot_reason "$reason"; then
