@@ -216,6 +216,65 @@ JobId=1306093 JobName=test_06112019.sh
    StdOut=/a/stdout
    Power=
 
+JobId=25686416 JobName=test
+   UserId=user6(600) GroupId=group6(606) MCS_label=N/A
+   Priority=1641613 Nice=0 Account=account6 QOS=normal WCKey=*
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=0 Restarts=0 BatchFlag=0 Reboot=0 ExitCode=0:0
+   DerivedExitCode=0:0
+   RunTime=00:00:25 TimeLimit=02:00:00 TimeMin=N/A
+   SubmitTime=2025-03-19T15:41:18 EligibleTime=2025-03-19T15:41:18
+   AccrueTime=2025-03-19T15:41:18
+   StartTime=2025-03-19T15:41:19 EndTime=2025-03-19T17:41:19 Deadline=N/A
+   PreemptEligibleTime=2025-03-19T15:41:19 PreemptTime=None
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2025-03-19T15:41:19
+   Partition=interactive AllocNode:Sid=alloc-node-02:381751
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=node-005
+   BatchHost=node-005
+   NumNodes=1 NumCPUs=2 NumTasks=1 CPUs/Task=2 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=2,mem=1G,node=1,billing=2,gres/gg=1,gres/gg:g0=1,gres/gpu=1,license/interactive=1
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   JOB_GRES=gg:g0:1,gpu:1
+     Nodes=node-005 CPU_IDs=14-15 Mem=1024 GRES=gg:g0(CNT:1),gpu:1(IDX:3)
+   MinCPUsNode=2 MinMemoryNode=1G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=interactive:1 Network=(null)
+   Command=/a/command
+   WorkDir=/a/workdir
+   Power=
+   TresPerNode=gg:g0:1,gpu:1
+   NtasksPerTRES:0
+
+JobId=25687666 JobName=test
+   UserId=user6(600) GroupId=group6(606) MCS_label=N/A
+   Priority=1641613 Nice=0 Account=system QOS=normal WCKey=*
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=0 Restarts=0 BatchFlag=0 Reboot=0 ExitCode=0:0
+   RunTime=00:00:29 TimeLimit=02:00:00 TimeMin=N/A
+   SubmitTime=2025-03-19T16:31:00 EligibleTime=2025-03-19T16:31:00
+   AccrueTime=2025-03-19T16:31:00
+   StartTime=2025-03-19T16:31:01 EndTime=2025-03-19T18:31:01 Deadline=N/A
+   PreemptEligibleTime=2025-03-19T16:31:01 PreemptTime=None
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2025-03-19T16:31:01
+   Partition=interactive AllocNode:Sid=alloc-node-02:407409
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=node-001
+   BatchHost=node-001
+   NumNodes=1 NumCPUs=2 NumTasks=1 CPUs/Task=2 ReqB:S:C:T=0:0:*:*
+   TRES=cpu=2,mem=1G,node=1,billing=2,gres/gg=1,gres/gg:g0=1,gres/gpu=1,gres/gpu:rtx2080=1,license/interactive=1
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   JOB_GRES=gpu:rtx2080:1,gg:g0:1
+     Nodes=node-001 CPU_IDs=2-3 Mem=1024 GRES=gpu:rtx2080:1(IDX:1),gg:g0(CNT:1)
+   MinCPUsNode=2 MinMemoryNode=1G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=interactive:1 Network=(null)
+   Command=cmd
+   WorkDir=workdir
+   Power=
+   TresPerNode=gpu:rtx2080,gg:g0
+   NtasksPerTRES:0
+
 ";
 
 my %jobs = (1 => {"JobId" => "1",
@@ -735,6 +794,176 @@ my %jobs = (1 => {"JobId" => "1",
                                         ],
 
                          },
+
+            "25686416" => {
+                           "JobId" => "25686416",
+                           "JobName" => "test",
+                           "UserId" => "user6(600)",
+                           "_UID" => "600",
+                           "_UserName" => "user6",
+                           "GroupId" => "group6(606)",
+                           "MCS_label" => "N/A",
+                           "Priority" => "1641613",
+                           "Nice" => "0",
+                           "Account" => "account6",
+                           "QOS" => "normal",
+                           "WCKey" => "*",
+                           "JobState" => "RUNNING",
+                           "Reason" => "None",
+                           "Dependency" => "(null)",
+                           "Requeue" => "0",
+                           "Restarts" => "0",
+                           "BatchFlag" => "0",
+                           "Reboot" => "0",
+                           "ExitCode" => "0:0",
+                           "DerivedExitCode" => "0:0",
+                           "RunTime" => "00:00:25",
+                           "TimeLimit" => "02:00:00",
+                           "TimeMin" => "N/A",
+                           "SubmitTime" => "2025-03-19T15:41:18",
+                           "EligibleTime" => "2025-03-19T15:41:18",
+                           "AccrueTime" => "2025-03-19T15:41:18",
+                           "StartTime" => "2025-03-19T15:41:19",
+                           "EndTime" => "2025-03-19T17:41:19",
+                           "Deadline" => "N/A",
+                           "PreemptEligibleTime" => "2025-03-19T15:41:19",
+                           "PreemptTime" => "None",
+                           "SuspendTime" => "None",
+                           "SecsPreSuspend" => "0",
+                           "LastSchedEval" => "2025-03-19T15:41:19",
+                           "Partition" => "interactive",
+                           "AllocNode:Sid" => "alloc-node-02:381751",
+                           "ReqNodeList" => "(null)",
+                           "ExcNodeList" => "(null)",
+                           "NodeList" => "node-005",
+                           "_NodeList" => ["node-005"],
+                           "BatchHost" => "node-005",
+                           "NumNodes" => "1",
+                           "NumCPUs" => "2",
+                           "NumTasks" => "1",
+                           "CPUs/Task" => "2",
+                           "ReqB:S:C:T" => "0:0:*:*",
+                           "TRES" => "cpu=2,mem=1G,node=1,billing=2,gres/gg=1,gres/gg:g0=1,gres/gpu=1,license/interactive=1",
+                           "_TRES" => {"cpu" => "2", "mem" => "1024M", "node" => "1", "billing" => "2", "gres/gg" => "1", "gres/gg:g0" => "1", "gres/gpu" => "1", "license/interactive" => "1"},
+                           "Socks/Node" => "*",
+                           "NtasksPerN:B:S:C" => "0:0:*:*",
+                           "CoreSpec" => "*",
+                           "JOB_GRES" => "gg:g0:1,gpu:1",
+                           "MinCPUsNode" => "2",
+                           "MinMemoryNode" => "1G",
+                           "MinTmpDiskNode" => "0",
+                           "Features" => "(null)",
+                           "DelayBoot" => "00:00:00",
+                           "OverSubscribe" => "OK",
+                           "Contiguous" => "0",
+                           "Licenses" => "interactive:1",
+                           "Network" => "(null)",
+                           "Command" => "/a/command",
+                           "WorkDir" => "/a/workdir",
+                           "Power" => "",
+                           "TresPerNode" => "gg:g0:1,gpu:1",
+                           "_DETAILS" => [{
+                                           "Nodes" => "node-005",
+                                           "_NodeList" => ["node-005"],
+                                           "CPU_IDs" => "14-15",
+                                           "_CPUs" => [14, 15],
+                                           "Mem" => "1024",
+                                           "_nCPUs" => 2,
+                                           "_JobId" => "25686416",
+                                           "GRES" => "gg:g0(CNT:1),gpu:1(IDX:3)",
+                                           "_GRES_IDX" => "gg:g0(CNT:1),gpu:1(IDX:3)",
+                                           "_GRESs" => {gpu => [3]},
+                                           "_EndTime" => "2025-03-19T17:41:19",
+                                           "_GRES" => {gpu => 1, "gg" => 1},
+                                          },
+                                         ],
+                           # FIXME
+                           "NtasksPerTRES:0" => {},
+                       },
+
+            "25687666" => {
+                           "JobId" => "25687666",
+                           "JobName" => "test",
+                           "UserId" => "user6(600)",
+                           "_UserName" => "user6",
+                           "_UID" => "600",
+                           "GroupId" => "group6(606)",
+                           "MCS_label" => "N/A",
+                           "Priority" => "1641613",
+                           "Nice" => "0",
+                           "Account" => "system",
+                           "QOS" => "normal",
+                           "WCKey" => "*",
+                           "JobState" => "RUNNING",
+                           "Reason" => "None",
+                           "Dependency" => "(null)",
+                           "Requeue" => "0",
+                           "Restarts" => "0",
+                           "BatchFlag" => "0",
+                           "Reboot" => "0",
+                           "ExitCode" => "0:0",
+                           "RunTime" => "00:00:29",
+                           "TimeLimit" => "02:00:00",
+                           "TimeMin" => "N/A",
+                           "SubmitTime" => "2025-03-19T16:31:00",
+                           "EligibleTime" => "2025-03-19T16:31:00",
+                           "AccrueTime" => "2025-03-19T16:31:00",
+                           "StartTime" => "2025-03-19T16:31:01",
+                           "EndTime" => "2025-03-19T18:31:01",
+                           "Deadline" => "N/A",
+                           "PreemptEligibleTime" => "2025-03-19T16:31:01",
+                           "PreemptTime" => "None",
+                           "SuspendTime" => "None",
+                           "SecsPreSuspend" => "0",
+                           "LastSchedEval" => "2025-03-19T16:31:01",
+                           "Partition" => "interactive",
+                           "AllocNode:Sid" => "alloc-node-02:407409",
+                           "ReqNodeList" => "(null)",
+                           "ExcNodeList" => "(null)",
+                           "NodeList" => "node-001",
+                           "_NodeList" => ["node-001"],
+                           "BatchHost" => "node-001",
+                           "NumNodes" => "1",
+                           "NumCPUs" => "2",
+                           "NumTasks" => "1",
+                           "CPUs/Task" => "2",
+                           "ReqB:S:C:T" => "0:0:*:*",
+                           "TRES" => "cpu=2,mem=1G,node=1,billing=2,gres/gg=1,gres/gg:g0=1,gres/gpu=1,gres/gpu:rtx2080=1,license/interactive=1",
+                           "_TRES" => {"cpu" => "2", "mem" => "1024M", "node" => "1", "billing" => "2", "gres/gg" => "1", "gres/gg:g0" => "1", "gres/gpu" => "1", "gres/gpu:rtx2080" => "1", "license/interactive" => "1"},
+                           "Socks/Node" => "*",
+                           "NtasksPerN:B:S:C" => "0:0:*:*",
+                           "CoreSpec" => "*",
+                           "JOB_GRES" => "gpu:rtx2080:1,gg:g0:1",
+                           "_DETAILS" => [{
+                                           "Nodes" => "node-001",
+                                           "_NodeList" => ["node-001"],
+                                           "CPU_IDs" => "2-3",
+                                           "_nCPUs" => 2,
+                                           "_JobId" => 25687666,
+                                           "_CPUs" => [2,3],
+                                           "Mem" => "1024",
+                                           "GRES" => "gpu:rtx2080:1(IDX:1),gg:g0(CNT:1)",
+                                           "_GRES" => {gpu => 1, gg => 1},
+                                           "_GRES_IDX" => "gpu:rtx2080:1(IDX:1),gg:g0(CNT:1)",
+                                           "_EndTime" => "2025-03-19T18:31:01",
+                                           "_GRESs" => {gpu => [1]},
+                                          }],
+                           "MinCPUsNode" => "2",
+                           "MinMemoryNode" => "1G",
+                           "MinTmpDiskNode" => "0",
+                           "Features" => "(null)",
+                           "DelayBoot" => "00:00:00",
+                           "OverSubscribe" => "OK",
+                           "Contiguous" => "0",
+                           "Licenses" => "interactive:1",
+                           "Network" => "(null)",
+                           "Command" => "cmd",
+                           "WorkDir" => "workdir",
+                           "Power" => "",
+                           "TresPerNode" => "gpu:rtx2080,gg:g0",
+                           "NtasksPerTRES:0" => {},
+                          },
+
            );
 
 

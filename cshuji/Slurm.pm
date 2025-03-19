@@ -717,19 +717,25 @@ sub get_jobs {
 
             my $greskey = (exists $detail->{GRES} and not exists $detail->{GRES_IDX}) ? "GRES" : "GRES_IDX";
             if (exists $detail->{$greskey}) {
-                foreach my $gres ($detail->{$greskey} =~ m/([^(]+?\(IDX:[-\d,]+\),?)/g) {
+                foreach my $gres ($detail->{$greskey} =~ m/([^(]+?\((?:IDX|CNT):[-\d,]+\),?)/g) {
                     $gres =~ s/,$//;
-                    my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(IDX:([\d\-,]+)\)/;
-                    $detail->{_GRES}{$name} //= 0;
-                    $detail->{_GRESs}{$name} //= [];
-                    foreach my $gr (split /,/, $count) {
-                        if ($gr =~ m/(.*)-(.*)/) {
-                            $detail->{_GRES}{$name} += $2 - $1 + 1;
-                            push @{$detail->{_GRESs}{$name}}, ($1 .. $2);
-                        } else {
-                            $detail->{_GRES}{$name}++;
-                            push @{$detail->{_GRESs}{$name}}, $gr;
+                    if ($gres =~ m/\(IDX/) {
+                        my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(IDX:([\d\-,]+)\)/;
+                        $detail->{_GRES}{$name} //= 0;
+                        $detail->{_GRESs}{$name} //= [];
+                        foreach my $gr (split /,/, $count) {
+                            if ($gr =~ m/(.*)-(.*)/) {
+                                $detail->{_GRES}{$name} += $2 - $1 + 1;
+                                push @{$detail->{_GRESs}{$name}}, ($1 .. $2);
+                            } else {
+                                $detail->{_GRES}{$name}++;
+                                push @{$detail->{_GRESs}{$name}}, $gr;
+                            }
                         }
+                    } elsif ($gres =~ m/\(CNT/) {
+                        my ($name, $count) = $gres =~ m/^(.+?)(?::.*?)?\(CNT:([\d\-,]+)\)/;
+                        $detail->{_GRES}{$name} //= 0;
+                        $detail->{_GRES}{$name} += $count;
                     }
                 }
                 $detail->{_GRES_IDX} = $detail->{$greskey};
