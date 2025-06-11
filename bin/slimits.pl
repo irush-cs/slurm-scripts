@@ -7,6 +7,7 @@ use Clone;
 use List::Util qw(max min);
 use Text::Table;
 use Getopt::Long;
+use Sort::Key::Natural qw(natsort);
 
 Getopt::Long::Configure("bundling");
 
@@ -477,7 +478,7 @@ foreach my $entries (@entries) {
         if ($in_qos) {
             push @data, $row->{QOS};
         }
-        foreach my $tres (sort keys %tres) {
+        foreach my $tres (natsort keys %tres) {
             push @data, $avail ? $row->{"${tres}-avail"} : sprintf "\%s / \%$tlength{$tres}s", @{$row->{$tres}};
         }
         foreach my $tres (sort keys %tresmin) {
@@ -505,7 +506,7 @@ foreach my $entries (@entries) {
 
 my $table = Text::Table->new("User", \" | ", "Account", \" | ",
                              ($in_qos ? ("QOS", \" | ") : ()),
-                             (map {{title => "$_", align => "right", align_title => "right"}, \" | "} sort keys %tres),
+                             (map {{title => "$_", align => "right", align_title => "right"}, \" | "} natsort keys %tres),
                              (map {{title => "$_ min", align => "right", align_title => "right"}, \" | "} sort keys %tresmin),
                              (map {{title => "$_ pj", align => "right", align_title => "right"}, \" | "} sort keys %trespj),
                              (map {{title => "$_ pu", align => "right", align_title => "right"}, \" | "} sort keys %trespu),
