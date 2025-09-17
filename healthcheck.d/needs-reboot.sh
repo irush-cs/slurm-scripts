@@ -52,15 +52,19 @@ case "${state}" in
                 ]]; then
                 # special case when stuck on completing, check for how long
                 # it's like this, more than an hour - reboot
-                if [[ "$state" = "IDLE+COMPLETING+DRAIN" || "$state" = "IDLE*+COMPLETING+DRAIN" ]]; then
-                    endtime=`squeue -w "${node}" -h -Oendtime | sort | tail -n 1`
-                    endtime=`date -d $endtime +%s`
-                    lastcomp=$((`date +%s` - endtime))
-                    if [[ $lastcomp -lt $((60 * 60)) ]]; then
-                        echo 'needs reboot'
-                        exit 1;
-                    fi
-                fi
+                case $state in
+                    *COMPLETING*)
+                        endtime=`squeue -w "${node}" -h -Oendtime | sort | tail -n 1`
+                        if [[ -n "${endtime}" ]]; then
+                            endtime=`date -d $endtime +%s`
+                            lastcomp=$((`date +%s` - endtime))
+                            if [[ $lastcomp -lt $((60 * 60)) ]]; then
+                                echo 'needs reboot'
+                                exit 1;
+                            fi
+                        fi
+                        ;;
+                esac
                 if [[ $draintime -lt $boottime ]]; then
                     # drain before reboot, can resume
                     exit 0
