@@ -4,7 +4,7 @@
 #
 #   healthcheck.sh
 #
-#   Copyright (C) 2018-2022 Hebrew University of Jerusalem Israel, see LICENSE
+#   Copyright (C) 2018-2025 Hebrew University of Jerusalem Israel, see LICENSE
 #   file.
 #
 #   Author: Yair Yarom <irush@cs.huji.ac.il>
@@ -101,7 +101,17 @@ if [[ $? != 0 || -n "$out" ]]; then
     esac
 
     if [[ "$newdrain" == 1 ]]; then
-        if [[ ! -e ${slurmdir}/healthcheck-mail.ignore ]] || ! grep -qx "$out" ${slurmdir}/healthcheck-mail.ignore ; then
+
+        sendmail=1
+        if [[ -e ${slurmdir}/healthcheck-mail.ignore ]]; then
+            while read line; do
+                if echo "$out" | grep -qx "$line"; then
+                    sendmail=0
+                fi
+            done < ${slurmdir}/healthcheck-mail.ignore
+        fi
+
+        if [[ "$sendmail" == 1 ]]; then
             (echo "Healthcheck issues ($out), draining $node";
              echo;
              echo "Running processes:";
@@ -120,7 +130,17 @@ else
             reason=`scontrol show node $node | awk -F= '$1~/^\s*Reason/{print $2}'`
             if echo $reason | grep -q ^HC:\ ; then
                 reason=`echo $reason | sed -e 's/HC: \(.*\) \[.*/\1/'`
-                if [[ ! -e ${slurmdir}/healthcheck-mail.ignore ]] || ! grep -qx "$reason" ${slurmdir}/healthcheck-mail.ignore; then
+
+                sendmail=1
+                if [[ -e ${slurmdir}/healthcheck-mail.ignore ]]; then
+                    while read line; do
+                        if echo "$reason" | grep -qx "$line"; then
+                            sendmail=0
+                        fi
+                    done < ${slurmdir}/healthcheck-mail.ignore
+                fi
+
+                if [[ "$sendmail" == 1 ]]; then
                     scontrol show node $node | mail -s "Resuming node $node" ${maintainers} > /dev/null 2>&1
                 fi
                 scontrol update nodename=$node state=resume
