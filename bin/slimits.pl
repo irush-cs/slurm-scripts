@@ -114,6 +114,7 @@ my %nontres = (MaxSubmitJobs => 1,
 if ($in_qos) {
     $nontres{MaxJobsPA} = 1;
     $nontres{MaxJobsPU} = 1;
+    $nontres{MaxSubmitJobsPU} = 1;
 }
 my %useronlytres = (MaxSubmitJobs => 1,
                     MaxJobs => 1,
@@ -171,6 +172,9 @@ if ($in_qos) {
                 $qos{$q}{MaxJobsPU} = $qos{$q}{_current}{"Account Limits"}{$account} ?
                   $qos{$q}{_current}{"Account Limits"}{$account}{MaxJobsPU} :
                   $qos{$q}{MaxJobsPU};
+                $qos{$q}{MaxSubmitJobsPU} = $qos{$q}{_current}{"User Limits"}{getpwnam($user)} ?
+                  $qos{$q}{_current}{"User Limits"}{getpwnam($user)}{MaxSubmitJobsPU} :
+                  ($qos{$q}{MaxSubmitPU} ? "$qos{$q}{MaxSubmitPU}(0)" : '');
             }
 
             # we'll sort them here, because we're per account
